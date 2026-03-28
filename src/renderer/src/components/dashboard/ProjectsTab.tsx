@@ -3,7 +3,7 @@ import { useAppState, ProjectStateView, ComponentStateView } from '../../context
 import { StatusBadge } from '../StatusBadge'
 
 export function ProjectsTab(): React.JSX.Element {
-  const { state, openTerminal, openEditor, openGitGui, killPort } = useAppState()
+  const { state, openTerminal, openEditor, openGitGui, killPort, startComponent, stopComponent, startProject, stopProject } = useAppState()
   const projects = Object.values(state.projects)
 
   if (projects.length === 0) {
@@ -33,6 +33,10 @@ export function ProjectsTab(): React.JSX.Element {
           onOpenEditor={openEditor}
           onOpenGitGui={openGitGui}
           onKillPort={killPort}
+          onStartProject={startProject}
+          onStopProject={stopProject}
+          onStartComponent={startComponent}
+          onStopComponent={stopComponent}
         />
       ))}
     </div>
@@ -44,13 +48,21 @@ function ProjectCard({
   onOpenTerminal,
   onOpenEditor,
   onOpenGitGui,
-  onKillPort
+  onKillPort,
+  onStartProject,
+  onStopProject,
+  onStartComponent,
+  onStopComponent
 }: {
   project: ProjectStateView
   onOpenTerminal: (dir: string) => void
   onOpenEditor: (dir: string) => void
   onOpenGitGui: (dir: string) => void
   onKillPort: (port: number) => Promise<boolean>
+  onStartProject: (projectName: string) => Promise<unknown>
+  onStopProject: (projectName: string) => Promise<unknown>
+  onStartComponent: (projectName: string, componentName: string) => Promise<unknown>
+  onStopComponent: (projectName: string, componentName: string) => Promise<boolean>
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(true)
   const components = Object.values(project.components)
@@ -81,6 +93,27 @@ function ProjectCard({
           </span>
         </button>
 
+        <div className="flex items-center gap-1">
+          {runningCount < components.length && (
+            <button
+              onClick={() => onStartProject(project.name)}
+              className="px-2 py-1 text-[11px] text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-400/10 rounded transition-colors"
+              title="Start All"
+            >
+              Start All
+            </button>
+          )}
+          {runningCount > 0 && (
+            <button
+              onClick={() => onStopProject(project.name)}
+              className="px-2 py-1 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+              title="Stop All"
+            >
+              Stop All
+            </button>
+          )}
+        </div>
+
         <button
           onClick={() => onOpenGitGui(project.directory)}
           className="px-2 py-1 text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] rounded transition-colors flex-shrink-0"
@@ -97,10 +130,13 @@ function ProjectCard({
             <ComponentDetail
               key={comp.name}
               component={comp}
+              projectName={project.name}
               projectDir={project.directory}
               onOpenTerminal={onOpenTerminal}
               onOpenEditor={onOpenEditor}
               onKillPort={onKillPort}
+              onStartComponent={onStartComponent}
+              onStopComponent={onStopComponent}
             />
           ))}
         </div>
@@ -111,23 +147,39 @@ function ProjectCard({
 
 function ComponentDetail({
   component,
+  projectName,
   projectDir,
   onOpenTerminal,
   onOpenEditor,
-  onKillPort
+  onKillPort,
+  onStartComponent,
+  onStopComponent,
+  onViewLog
 }: {
   component: ComponentStateView
+  projectName: string
   projectDir: string
   onOpenTerminal: (dir: string) => void
   onOpenEditor: (dir: string) => void
   onKillPort: (port: number) => Promise<boolean>
+  onStartComponent: (projectName: string, componentName: string) => Promise<unknown>
+  onStopComponent: (projectName: string, componentName: string) => Promise<boolean>
+  onViewLog?: (projectName: string, componentName: string) => void
 }): React.JSX.Element {
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] border-b border-white/[0.03] last:border-b-0">
       <StatusBadge status={component.status} size="md" />
 
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] text-zinc-300 font-medium">{component.name}</div>
+        <div className="text-[13px] text-zinc-300 font-medium">
+          {component.name}
+          {component.processOrigin === 'managed' && component.status !== 'stopped' && (
+            <span className="ml-1.5 text-[9px] font-mono uppercase tracking-wider text-emerald-500/50">managed</span>
+          )}
+          {component.processOrigin === 'external' && component.status !== 'stopped' && (
+            <span className="ml-1.5 text-[9px] font-mono uppercase tracking-wider text-zinc-500">external</span>
+          )}
+        </div>
         <div className="flex gap-2 mt-0.5">
           {component.ports.map((port) => (
             <span
@@ -145,6 +197,39 @@ function ComponentDetail({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
+        {component.status === 'stopped' ? (
+          <button
+            onClick={() => onStartComponent(projectName, component.name)}
+            className="px-2 py-1 text-[11px] text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-400/10 rounded transition-colors"
+          >
+            Start
+          </button>
+        ) : component.processOrigin === 'managed' ? (
+          <button
+            onClick={() => onStopComponent(projectName, component.name)}
+            className="px-2 py-1 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+          >
+            Stop
+          </button>
+        ) : component.ports.some((p) => p.status === 'in-use') ? (
+          <button
+            onClick={() => {
+              const activePort = component.ports.find((p) => p.status === 'in-use')
+              if (activePort) onKillPort(activePort.port)
+            }}
+            className="px-2 py-1 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+          >
+            Kill
+          </button>
+        ) : null}
+        {component.status !== 'stopped' && onViewLog && (
+          <button
+            onClick={() => onViewLog(projectName, component.name)}
+            className="px-2 py-1 text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] rounded transition-colors"
+          >
+            Logs
+          </button>
+        )}
         <button
           onClick={() => onOpenTerminal(projectDir)}
           className="px-2 py-1 text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] rounded transition-colors"
@@ -159,17 +244,6 @@ function ComponentDetail({
         >
           Editor
         </button>
-        {component.ports.some((p) => p.status === 'in-use') && (
-          <button
-            onClick={() => {
-              const activePort = component.ports.find((p) => p.status === 'in-use')
-              if (activePort) onKillPort(activePort.port)
-            }}
-            className="px-2 py-1 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-          >
-            Kill
-          </button>
-        )}
       </div>
     </div>
   )
