@@ -4,6 +4,8 @@
 
 Building a system tray application that auto-discovers projects in configurable directories, monitors port usage, detects conflicts, tracks dependency health (Docker, external services, APIs), and provides quick actions. Full spec: `docs/superpowers/specs/2026-03-28-service-starter-design.md`.
 
+This document also serves as the template another agent can follow when generating a `.service-starter.yml` for an existing project in a different repository. The app implementation plan stays below; the reusable manifest-generation instructions are at the end of this file.
+
 ## Step 1: Project Scaffolding
 
 Scaffold the Electron app using `electron-vite` with the `react-ts` template:
@@ -197,3 +199,78 @@ Build the full dashboard opened from the tray:
 6. Quick actions: "Open in Terminal" opens configured terminal, "Open in Editor" opens configured editor
 7. Docker dependency: start/stop a container, verify status updates
 8. `npm test` — all unit tests pass
+
+## Reusable Template: Generate `.service-starter.yml` In Another Project
+
+Use this section when the task is not "build Service Starter" but "inspect some other repo and generate its `.service-starter.yml` config".
+
+### Goal
+
+Produce a project-local `.service-starter.yml` that is accurate enough for Service Starter to:
+
+- identify the project and its runnable components
+- show expected dev ports
+- prefill sensible start commands
+- surface important local dependencies
+
+### What the agent should inspect
+
+Before writing the manifest, inspect the target repository for:
+
+1. package managers and workspace layout: `package.json`, `pnpm-workspace.yaml`, `turbo.json`, `nx.json`, `lerna.json`
+2. runnable apps/services: scripts, Docker Compose services, Gradle/Maven modules, Rails apps, Go services, etc.
+3. default dev ports: Vite, Next.js, CRA, Express, Spring Boot, Storybook, docs sites, workers with health ports
+4. likely working directories and source directories for each runnable component
+5. local dependencies:
+   - `docker-compose.yml` / `compose.yml` containers
+   - required background services invoked by documented setup commands
+   - external APIs that require environment variables
+   - other local projects this repo depends on
+
+### Manifest authoring rules
+
+- Put the file at the project root as `.service-starter.yml`.
+- Prefer one component per independently runnable app/service.
+- Use paths relative to the project root.
+- Only include `codeDir` when there is a clearly better editor target than `workDir`.
+- Only include `startCommand` when the repo already has an established dev/start script or command.
+- Only declare ports that are actually expected in local development.
+- Use project-level `dependencies` only when the dependency applies to the whole repo; otherwise attach it to the relevant component.
+- Use `${VAR}` syntax only for environment variables that must come from the shell.
+- Do not invent containers, ports, or commands. If evidence is weak, omit the field and note the assumption.
+
+### Expected output
+
+The agent should return:
+
+1. the proposed `.service-starter.yml`
+2. a short evidence summary listing which files or docs justified each component/port/command
+3. any assumptions or unresolved ambiguities
+
+### Copy-paste prompt for another agent
+
+```text
+Inspect this repository and generate a `.service-starter.yml` at the repo root for Service Starter.
+
+Requirements:
+- Discover the actual runnable local-development components from the repo structure and scripts.
+- Use the Service Starter manifest shape from `docs/manifest-examples.md` and `docs/superpowers/specs/2026-03-28-service-starter-design.md`.
+- Prefer evidence from project files over guesses.
+- Include `name`, `components`, and any justified `dependencies`.
+- For each component, include `workDir`, `codeDir`, `startCommand`, `ports`, `env`, and `dependencies` only when supported by evidence.
+- Keep all paths relative to the project root.
+- Do not invent ports, commands, containers, or env vars. If something is unclear, omit it and call it out.
+
+Process:
+1. Inspect repo-level files such as `package.json`, workspace config, Docker Compose files, backend build files, README/setup docs, and app-specific configs.
+2. Identify each independently runnable dev component and its working directory.
+3. Infer expected dev ports from scripts/configs/docs.
+4. Identify local Docker/service/API/project dependencies.
+5. Write `.service-starter.yml`.
+6. Summarize the evidence and assumptions briefly.
+
+Output format:
+- First: the final YAML
+- Then: `Evidence`
+- Then: `Assumptions / Gaps`
+```
