@@ -69,6 +69,10 @@ export class TrayWindow {
     this.window.setPosition(x, y, false)
     this.window.show()
     this.window.focus()
+    // Prevent Chromium from auto-focusing the first focusable element
+    this.window.webContents.executeJavaScript(
+      'queueMicrotask(() => document.activeElement?.blur())'
+    )
   }
 
   hide(): void {

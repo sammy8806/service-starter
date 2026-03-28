@@ -62,7 +62,7 @@ export function ProjectGroup({
         </button>
 
         {/* Project-level action buttons */}
-        <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
+        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
             onClick={(e) => {
               e.stopPropagation()

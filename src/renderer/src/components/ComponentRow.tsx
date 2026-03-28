@@ -25,23 +25,8 @@ export function ComponentRow({
         {component.name}
       </span>
 
-      {/* Port display */}
-      {mainPort && (
-        <span
-          className={`font-mono text-[11px] tabular-nums ${
-            mainPort.status === 'conflict'
-              ? 'text-amber-400'
-              : mainPort.status === 'in-use'
-                ? 'text-emerald-400'
-                : 'text-zinc-500'
-          }`}
-        >
-          :{mainPort.port}
-        </span>
-      )}
-
-      {/* Hover actions */}
-      <div className="hidden group-hover:flex items-center gap-0.5 -mr-1">
+      {/* Hover actions - left of port so layout doesn't shift */}
+      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
         <ActionButton
           icon="code"
           title="Open in Editor"
@@ -56,6 +41,21 @@ export function ComponentRow({
           />
         )}
       </div>
+
+      {/* Port display */}
+      {mainPort && (
+        <span
+          className={`font-mono text-[11px] tabular-nums ${
+            mainPort.status === 'conflict'
+              ? 'text-amber-400'
+              : mainPort.status === 'in-use'
+                ? 'text-emerald-400'
+                : 'text-zinc-500'
+          }`}
+        >
+          :{mainPort.port}
+        </span>
+      )}
     </div>
   )
 }
