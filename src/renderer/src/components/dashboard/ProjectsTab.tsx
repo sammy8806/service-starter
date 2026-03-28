@@ -3,7 +3,7 @@ import { useAppState, ProjectStateView, ComponentStateView } from '../../context
 import { StatusBadge } from '../StatusBadge'
 
 export function ProjectsTab(): React.JSX.Element {
-  const { state, openTerminal, openEditor, killPort } = useAppState()
+  const { state, openTerminal, openEditor, openGitGui, killPort } = useAppState()
   const projects = Object.values(state.projects)
 
   if (projects.length === 0) {
@@ -31,6 +31,7 @@ export function ProjectsTab(): React.JSX.Element {
           project={project}
           onOpenTerminal={openTerminal}
           onOpenEditor={openEditor}
+          onOpenGitGui={openGitGui}
           onKillPort={killPort}
         />
       ))}
@@ -42,11 +43,13 @@ function ProjectCard({
   project,
   onOpenTerminal,
   onOpenEditor,
+  onOpenGitGui,
   onKillPort
 }: {
   project: ProjectStateView
   onOpenTerminal: (dir: string) => void
   onOpenEditor: (dir: string) => void
+  onOpenGitGui: (dir: string) => void
   onKillPort: (port: number) => Promise<boolean>
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(true)
@@ -56,26 +59,36 @@ function ProjectCard({
   return (
     <div className="rounded-lg border border-white/[0.06] bg-zinc-800/50 overflow-hidden">
       {/* Card header */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors"
-      >
-        <svg
-          className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${expanded ? 'rotate-90' : ''}`}
-          fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+      <div className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="flex items-center gap-3 flex-1 min-w-0"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-        </svg>
+          <svg
+            className={`w-3.5 h-3.5 text-zinc-500 transition-transform ${expanded ? 'rotate-90' : ''}`}
+            fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+          </svg>
 
-        <div className="flex-1 text-left">
-          <div className="text-[14px] font-medium text-zinc-200">{project.name}</div>
-          <div className="text-[11px] font-mono text-zinc-600 mt-0.5">{project.directory}</div>
-        </div>
+          <div className="flex-1 text-left min-w-0">
+            <div className="text-[14px] font-medium text-zinc-200">{project.name}</div>
+            <div className="text-[11px] font-mono text-zinc-600 mt-0.5 truncate">{project.directory}</div>
+          </div>
 
-        <span className="text-[12px] font-mono tabular-nums text-zinc-500">
-          {runningCount}/{components.length}
-        </span>
-      </button>
+          <span className="text-[12px] font-mono tabular-nums text-zinc-500">
+            {runningCount}/{components.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => onOpenGitGui(project.directory)}
+          className="px-2 py-1 text-[11px] text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.06] rounded transition-colors flex-shrink-0"
+          title="Open in Git GUI"
+        >
+          Git
+        </button>
+      </div>
 
       {/* Expanded content */}
       {expanded && (

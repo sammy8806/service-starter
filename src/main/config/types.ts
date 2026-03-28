@@ -40,6 +40,7 @@ export interface PortDeclaration {
 export interface ComponentConfig {
   workDir?: string
   codeDir?: string
+  editor?: string
   startCommand?: string
   ports: PortDeclaration[]
   env?: Record<string, string>
@@ -64,12 +65,18 @@ export interface ProjectOverride {
   components?: Record<string, ComponentOverride>
 }
 
+export interface EditorConfig {
+  command: string
+}
+
 export interface CentralConfig {
   scanDirectories: string[]
   scanIntervalMs: number
   portScanIntervalMs: number
   editor: string
   terminal: string
+  gitGui: string
+  editors?: Record<string, EditorConfig>
   overrides?: Record<string, ProjectOverride>
 }
 
@@ -116,6 +123,9 @@ export interface ComponentState {
   status: ComponentStatus
   ports: PortState[]
   dependencies: DependencyState[]
+  editor?: string
+  codeDir?: string
+  workDir?: string
 }
 
 export interface ProjectState {

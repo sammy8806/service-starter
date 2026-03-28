@@ -11,7 +11,8 @@ const api = {
 
   // Quick actions
   openTerminal: (workDir: string) => ipcRenderer.send('action:open-terminal', workDir),
-  openEditor: (codeDir: string) => ipcRenderer.send('action:open-editor', codeDir),
+  openEditor: (codeDir: string, editor?: string) => ipcRenderer.send('action:open-editor', codeDir, editor),
+  openGitGui: (dir: string) => ipcRenderer.send('action:open-git-gui', dir),
   killPort: (port: number) => ipcRenderer.invoke('action:kill-port', port),
 
   // Window management

@@ -7,7 +7,8 @@ interface HandlerDependencies {
   getConfig: () => CentralConfig
   saveConfig: (config: CentralConfig) => void
   openTerminal: (workDir: string) => void
-  openEditor: (codeDir: string) => void
+  openEditor: (codeDir: string, editor?: string) => void
+  openGitGui: (dir: string) => void
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
 }
@@ -38,8 +39,12 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
     deps.openTerminal(workDir)
   })
 
-  ipcMain.on(IPC_CHANNELS.OPEN_EDITOR, (_event, codeDir: string) => {
-    deps.openEditor(codeDir)
+  ipcMain.on(IPC_CHANNELS.OPEN_EDITOR, (_event, codeDir: string, editor?: string) => {
+    deps.openEditor(codeDir, editor)
+  })
+
+  ipcMain.on(IPC_CHANNELS.OPEN_GIT_GUI, (_event, dir: string) => {
+    deps.openGitGui(dir)
   })
 
   ipcMain.handle(IPC_CHANNELS.KILL_PORT, async (_event, port: number) => {

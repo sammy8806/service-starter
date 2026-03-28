@@ -24,7 +24,7 @@ export interface ComponentSummary {
  * Hook for consuming app state with derived summaries.
  */
 export function useServiceState() {
-  const { state, openTerminal, openEditor, killPort, openDashboard } = useAppState()
+  const { state, openTerminal, openEditor, openGitGui, killPort, openDashboard } = useAppState()
 
   const projectSummaries = useMemo((): ProjectSummary[] => {
     return Object.values(state.projects).map((project) => {
@@ -53,6 +53,7 @@ export function useServiceState() {
     hasConflicts,
     openTerminal,
     openEditor,
+    openGitGui,
     killPort,
     openDashboard
   }

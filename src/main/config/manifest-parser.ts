@@ -115,6 +115,7 @@ function parseComponent(
   return {
     workDir: typeof data.workDir === 'string' ? data.workDir : undefined,
     codeDir: typeof data.codeDir === 'string' ? data.codeDir : undefined,
+    editor: typeof data.editor === 'string' ? data.editor : undefined,
     startCommand: typeof data.startCommand === 'string' ? data.startCommand : undefined,
     ports,
     env,

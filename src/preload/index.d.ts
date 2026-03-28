@@ -6,7 +6,8 @@ export interface ServiceStarterAPI {
   getConfig: () => Promise<unknown>
   saveConfig: (config: unknown) => Promise<boolean>
   openTerminal: (workDir: string) => void
-  openEditor: (codeDir: string) => void
+  openEditor: (codeDir: string, editor?: string) => void
+  openGitGui: (dir: string) => void
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
   closeWindow: () => void

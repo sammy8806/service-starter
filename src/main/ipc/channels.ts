@@ -17,6 +17,7 @@ export const IPC_CHANNELS = {
   // Quick actions
   OPEN_TERMINAL: 'action:open-terminal',
   OPEN_EDITOR: 'action:open-editor',
+  OPEN_GIT_GUI: 'action:open-git-gui',
   KILL_PORT: 'action:kill-port',
 
   // Window management

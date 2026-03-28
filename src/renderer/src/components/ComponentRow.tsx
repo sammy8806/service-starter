@@ -4,19 +4,18 @@ import { ComponentStateView } from '../context/AppContext'
 interface ComponentRowProps {
   component: ComponentStateView
   projectDir: string
-  onOpenTerminal: (dir: string) => void
-  onOpenEditor: (dir: string) => void
+  onOpenEditor: (dir: string, editor?: string) => void
   onKillPort: (port: number) => void
 }
 
 export function ComponentRow({
   component,
   projectDir,
-  onOpenTerminal,
   onOpenEditor,
   onKillPort
 }: ComponentRowProps): React.JSX.Element {
   const mainPort = component.ports[0]
+  const editorDir = component.codeDir ?? component.workDir ?? projectDir
 
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.04] transition-colors">
@@ -44,14 +43,9 @@ export function ComponentRow({
       {/* Hover actions */}
       <div className="hidden group-hover:flex items-center gap-0.5 -mr-1">
         <ActionButton
-          icon="terminal"
-          title="Open in Terminal"
-          onClick={() => onOpenTerminal(projectDir)}
-        />
-        <ActionButton
           icon="code"
           title="Open in Editor"
-          onClick={() => onOpenEditor(projectDir)}
+          onClick={() => onOpenEditor(editorDir, component.editor)}
         />
         {mainPort && mainPort.status === 'in-use' && (
           <ActionButton

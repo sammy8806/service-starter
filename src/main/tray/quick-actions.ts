@@ -1,5 +1,7 @@
 import { execFile } from 'child_process'
 import { existsSync } from 'fs'
+import { EditorConfig } from '../config/types'
+import { resolveEditor } from '../config/central-config'
 
 /**
  * Opens the given directory in the configured terminal.
@@ -37,36 +39,92 @@ export function openInTerminal(workDir: string, terminal: string = 'default'): v
 
 /**
  * Opens the given directory in the configured editor.
+ * Resolves the editor key against user-defined and built-in editor configs.
  */
-export function openInEditor(codeDir: string, editor: string = 'code'): void {
+export function openInEditor(
+  codeDir: string,
+  editorKey: string = 'code',
+  userEditors?: Record<string, EditorConfig>
+): void {
   if (!existsSync(codeDir)) {
     console.warn(`Directory not found: ${codeDir}`)
     return
   }
 
-  switch (editor) {
-    case 'code':
-    case 'vscode':
-      execFile('code', [codeDir])
+  const editorConfig = resolveEditor(editorKey, userEditors)
+
+  if (!editorConfig) {
+    // Unknown editor key — try using it as a raw command
+    console.warn(`Unknown editor "${editorKey}", attempting as raw command`)
+    execFile(editorKey, [codeDir])
+    return
+  }
+
+  const { command } = editorConfig
+
+  // Commands like 'open -a Xcode' need to be split into binary + args
+  const parts = parseCommand(command)
+  execFile(parts[0], [...parts.slice(1), codeDir])
+}
+
+/** Split a command string into binary and arguments, respecting quotes */
+function parseCommand(command: string): string[] {
+  const parts: string[] = []
+  let current = ''
+  let inQuote: string | null = null
+
+  for (const char of command) {
+    if (inQuote) {
+      if (char === inQuote) {
+        inQuote = null
+      } else {
+        current += char
+      }
+    } else if (char === '"' || char === "'") {
+      inQuote = char
+    } else if (char === ' ') {
+      if (current) {
+        parts.push(current)
+        current = ''
+      }
+    } else {
+      current += char
+    }
+  }
+  if (current) parts.push(current)
+
+  return parts
+}
+
+/**
+ * Opens the given directory in the configured Git GUI client.
+ * Supports: Fork, GitKraken, Sourcetree, GitHub Desktop, Tower.
+ */
+export function openInGitGui(dir: string, gitGui: string = 'fork'): void {
+  if (!existsSync(dir)) {
+    console.warn(`Directory not found: ${dir}`)
+    return
+  }
+
+  switch (gitGui) {
+    case 'fork':
+      execFile('open', ['-a', 'Fork', dir])
       break
-    case 'cursor':
-      execFile('cursor', [codeDir])
+    case 'gitkraken':
+      execFile('open', ['-a', 'GitKraken', dir])
       break
-    case 'zed':
-      execFile('zed', [codeDir])
+    case 'sourcetree':
+      execFile('open', ['-a', 'Sourcetree', dir])
       break
-    case 'idea':
-      execFile('idea', [codeDir])
+    case 'github-desktop':
+      execFile('open', ['-a', 'GitHub Desktop', dir])
       break
-    case 'webstorm':
-      execFile('webstorm', [codeDir])
-      break
-    case 'sublime':
-    case 'subl':
-      execFile('subl', [codeDir])
+    case 'tower':
+      execFile('open', ['-a', 'Tower', dir])
       break
     default:
-      execFile(editor, [codeDir])
+      // Fallback: try opening as an app name
+      execFile('open', ['-a', gitGui, dir])
       break
   }
 }

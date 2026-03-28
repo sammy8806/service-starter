@@ -6,6 +6,7 @@ interface SettingsForm {
   portScanIntervalMs: number
   editor: string
   terminal: string
+  gitGui: string
 }
 
 export function SettingsTab(): React.JSX.Element {
@@ -14,7 +15,8 @@ export function SettingsTab(): React.JSX.Element {
     scanIntervalMs: 5000,
     portScanIntervalMs: 3000,
     editor: 'code',
-    terminal: 'default'
+    terminal: 'default',
+    gitGui: 'fork'
   })
   const [saved, setSaved] = useState(false)
   const [newDir, setNewDir] = useState('')
@@ -27,7 +29,8 @@ export function SettingsTab(): React.JSX.Element {
         scanIntervalMs: c.scanIntervalMs ?? 5000,
         portScanIntervalMs: c.portScanIntervalMs ?? 3000,
         editor: c.editor ?? 'code',
-        terminal: c.terminal ?? 'default'
+        terminal: c.terminal ?? 'default',
+        gitGui: c.gitGui ?? 'fork'
       })
     })
   }, [])
@@ -131,7 +134,7 @@ export function SettingsTab(): React.JSX.Element {
       <section>
         <h3 className="text-[13px] font-medium text-zinc-300 mb-2">Applications</h3>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-[12px] text-zinc-500 block mb-1">Editor</label>
             <select
@@ -159,6 +162,20 @@ export function SettingsTab(): React.JSX.Element {
               <option value="warp">Warp</option>
               <option value="alacritty">Alacritty</option>
               <option value="kitty">Kitty</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-[12px] text-zinc-500 block mb-1">Git GUI</label>
+            <select
+              value={settings.gitGui}
+              onChange={(e) => setSettings({ ...settings, gitGui: e.target.value })}
+              className="w-full px-3 py-2 bg-zinc-800 border border-white/[0.08] rounded-lg text-[13px] text-zinc-300 focus:outline-none focus:border-zinc-500 transition-colors"
+            >
+              <option value="fork">Fork</option>
+              <option value="gitkraken">GitKraken</option>
+              <option value="sourcetree">Sourcetree</option>
+              <option value="github-desktop">GitHub Desktop</option>
+              <option value="tower">Tower</option>
             </select>
           </div>
         </div>

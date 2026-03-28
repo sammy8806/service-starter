@@ -26,6 +26,9 @@ export interface ComponentStateView {
   status: 'running' | 'stopped' | 'warning'
   ports: PortStateView[]
   dependencies: DependencyStateView[]
+  editor?: string
+  codeDir?: string
+  workDir?: string
 }
 
 export interface ProjectStateView {
@@ -58,7 +61,8 @@ const DEFAULT_STATE: AppStateView = {
 interface AppContextType {
   state: AppStateView
   openTerminal: (workDir: string) => void
-  openEditor: (codeDir: string) => void
+  openEditor: (codeDir: string, editor?: string) => void
+  openGitGui: (dir: string) => void
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
 }
@@ -67,6 +71,7 @@ const AppContext = createContext<AppContextType>({
   state: DEFAULT_STATE,
   openTerminal: () => {},
   openEditor: () => {},
+  openGitGui: () => {},
   killPort: async () => false,
   openDashboard: () => {}
 })
@@ -87,7 +92,8 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
   const value: AppContextType = {
     state,
     openTerminal: (workDir) => window.api.openTerminal(workDir),
-    openEditor: (codeDir) => window.api.openEditor(codeDir),
+    openEditor: (codeDir, editor) => window.api.openEditor(codeDir, editor),
+    openGitGui: (dir) => window.api.openGitGui(dir),
     killPort: (port) => window.api.killPort(port),
     openDashboard: () => window.api.openDashboard()
   }

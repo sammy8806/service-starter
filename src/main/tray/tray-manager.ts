@@ -34,7 +34,10 @@ export class TrayManager {
       this.onLeftClick?.()
     })
 
-    this.updateContextMenu()
+    // Right-click shows the context menu (don't use setContextMenu which triggers on all clicks on macOS)
+    this.tray.on('right-click', () => {
+      this.tray?.popUpContextMenu(this.buildContextMenu())
+    })
   }
 
   destroy(): void {
@@ -74,10 +77,8 @@ export class TrayManager {
     }
   }
 
-  private updateContextMenu(): void {
-    if (!this.tray) return
-
-    const menu = Menu.buildFromTemplate([
+  private buildContextMenu(): Menu {
+    return Menu.buildFromTemplate([
       {
         label: 'Open Dashboard',
         click: () => this.onOpenDashboard?.()
@@ -92,7 +93,5 @@ export class TrayManager {
         click: () => app.quit()
       }
     ])
-
-    this.tray.setContextMenu(menu)
   }
 }

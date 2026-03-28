@@ -10,7 +10,7 @@ import { HealthAggregator } from './dependencies/health-aggregator'
 import { TrayManager } from './tray/tray-manager'
 import { TrayWindow } from './tray/tray-window'
 import { registerIpcHandlers, pushStateToRenderers } from './ipc/handlers'
-import { openInTerminal, openInEditor, killProcessOnPort } from './tray/quick-actions'
+import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort } from './tray/quick-actions'
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -59,7 +59,10 @@ function buildAppState(): AppState {
         name: compName,
         status: hasIssue ? 'warning' : hasActivePorts ? 'running' : 'stopped',
         ports: portStates,
-        dependencies: depStates
+        dependencies: depStates,
+        editor: comp.editor,
+        codeDir: comp.codeDir ? join(dir, comp.codeDir) : undefined,
+        workDir: comp.workDir ? join(dir, comp.workDir) : undefined
       }
     }
 
@@ -189,7 +192,9 @@ app.whenReady().then(() => {
       projectRegistry.updateConfig(config)
     },
     openTerminal: (workDir: string) => openInTerminal(workDir, centralConfig.terminal),
-    openEditor: (codeDir: string) => openInEditor(codeDir, centralConfig.editor),
+    openEditor: (codeDir: string, editor?: string) =>
+      openInEditor(codeDir, editor ?? centralConfig.editor, centralConfig.editors),
+    openGitGui: (dir: string) => openInGitGui(dir, centralConfig.gitGui),
     killPort: killProcessOnPort,
     openDashboard: createDashboardWindow
   })
