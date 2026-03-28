@@ -1,5 +1,5 @@
 import { ActivePort, PortConflict, ResolvedProject } from '../config/types'
-import { buildPortOwnerMap, PortOwner } from './port-matcher'
+import { buildPortOwnerMap } from './port-matcher'
 
 /**
  * Detects port conflicts across all projects.

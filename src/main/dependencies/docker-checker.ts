@@ -1,5 +1,5 @@
 import Dockerode from 'dockerode'
-import { DependencyHealth, DockerDependency, DependencyState } from '../config/types'
+import { DockerDependency, DependencyState } from '../config/types'
 
 let docker: Dockerode | null = null
 

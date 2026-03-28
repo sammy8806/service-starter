@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { mkdtempSync, writeFileSync, mkdirSync, rmSync } from 'fs'
+import { mkdtempSync, writeFileSync, rmSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 import { parseManifest, manifestExists } from './manifest-parser'
@@ -56,7 +56,7 @@ dependencies:
     name: shared-lib
 `)
 
-      const { manifest, errors } = parseManifest(tempDir)
+      const { manifest } = parseManifest(tempDir)
 
       expect(manifest).not.toBeNull()
       expect(manifest!.name).toBe('my-project')
@@ -90,7 +90,7 @@ components:
         label: Web
 `)
 
-      const { manifest, errors } = parseManifest(tempDir)
+      const { manifest } = parseManifest(tempDir)
       expect(manifest).not.toBeNull()
       expect(manifest!.name).toBe('minimal')
       expect(manifest!.components['web'].ports).toEqual([{ port: 8080, label: 'Web' }])
@@ -113,7 +113,7 @@ components:
     it('reports errors for invalid YAML', () => {
       writeManifest('{{invalid yaml}')
 
-      const { manifest, errors } = parseManifest(tempDir)
+      const { errors } = parseManifest(tempDir)
       expect(errors.length).toBeGreaterThan(0)
       expect(errors[0]).toMatch(/Invalid YAML/)
     })
@@ -135,7 +135,7 @@ components:
         name: foo
 `)
 
-      const { manifest, errors } = parseManifest(tempDir)
+      const { errors } = parseManifest(tempDir)
       expect(errors).toContain('Unknown dependency type: "unknown-thing"')
     })
 

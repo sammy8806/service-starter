@@ -1,4 +1,4 @@
-import { readdirSync, statSync } from 'fs'
+import { readdirSync } from 'fs'
 import { join } from 'path'
 import { manifestExists, parseManifest, ParseResult } from '../config/manifest-parser'
 

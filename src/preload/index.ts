@@ -1,12 +1,33 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
-// Custom APIs for renderer
-const api = {}
+// Typed API exposed to the renderer
+const api = {
+  // State
+  getState: () => ipcRenderer.invoke('state:get'),
+  getProjects: () => ipcRenderer.invoke('projects:get'),
+  getConfig: () => ipcRenderer.invoke('config:get'),
+  saveConfig: (config: unknown) => ipcRenderer.invoke('config:save', config),
+
+  // Quick actions
+  openTerminal: (workDir: string) => ipcRenderer.send('action:open-terminal', workDir),
+  openEditor: (codeDir: string) => ipcRenderer.send('action:open-editor', codeDir),
+  killPort: (port: number) => ipcRenderer.invoke('action:kill-port', port),
+
+  // Window management
+  openDashboard: () => ipcRenderer.send('window:open-dashboard'),
+  closeWindow: () => ipcRenderer.send('window:close'),
+
+  // State update listener
+  onStateUpdate: (callback: (state: unknown) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => callback(state)
+    ipcRenderer.on('state:update', handler)
+    return () => ipcRenderer.removeListener('state:update', handler)
+  }
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
-// renderer only if context isolation is enabled, otherwise
-// just add to the DOM global.
+// renderer only if context isolation is enabled
 if (process.contextIsolated) {
   try {
     contextBridge.exposeInMainWorld('electron', electronAPI)

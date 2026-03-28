@@ -119,7 +119,7 @@ function collectAllDependencies(
   return deps
 }
 
-function depKey(owner: string, dep: Dependency): string {
+function depKey(_owner: string, dep: Dependency): string {
   switch (dep.type) {
     case 'docker':
       return `docker:${dep.container}`

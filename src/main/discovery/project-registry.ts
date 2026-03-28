@@ -67,7 +67,7 @@ export class ProjectRegistry extends EventEmitter {
   updateConfig(config: CentralConfig): void {
     this.centralConfig = config
     // Re-resolve all projects with new config
-    for (const [dir, project] of this.projects) {
+    for (const [dir, _project] of this.projects) {
       const { manifest } = parseManifest(dir)
       if (manifest) {
         const resolved = mergeConfig(manifest, dir, this.centralConfig)
