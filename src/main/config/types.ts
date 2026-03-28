@@ -94,6 +94,7 @@ export interface ResolvedProject {
 export type PortStatus = 'free' | 'in-use' | 'conflict'
 export type DependencyHealth = 'healthy' | 'unhealthy' | 'unknown'
 export type ComponentStatus = 'running' | 'stopped' | 'warning'
+export type ProcessOrigin = 'managed' | 'external' | 'none'
 export type TrayIconState = 'grey' | 'green' | 'orange'
 
 export interface ActivePort {
@@ -121,6 +122,7 @@ export interface DependencyState {
 export interface ComponentState {
   name: string
   status: ComponentStatus
+  processOrigin: ProcessOrigin
   ports: PortState[]
   dependencies: DependencyState[]
   editor?: string
