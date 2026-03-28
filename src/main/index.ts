@@ -9,8 +9,11 @@ import { PortMonitor } from './monitoring/monitor'
 import { HealthAggregator } from './dependencies/health-aggregator'
 import { TrayManager } from './tray/tray-manager'
 import { TrayWindow } from './tray/tray-window'
-import { registerIpcHandlers, pushStateToRenderers } from './ipc/handlers'
+import { registerIpcHandlers, pushStateToRenderers, pushLogDataToRenderers } from './ipc/handlers'
 import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort } from './tray/quick-actions'
+import { ProcessManager } from './process/process-manager'
+import { LogStreamer } from './process/log-streamer'
+import { ProcessOrigin } from './config/types'
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -21,6 +24,8 @@ let healthAggregator: HealthAggregator
 let trayManager: TrayManager
 let trayWindow: TrayWindow
 let dashboardWindow: BrowserWindow | null = null
+let processManager: ProcessManager
+let logStreamer: LogStreamer
 
 function buildAppState(): AppState {
   const projects: Record<string, ProjectState> = {}
@@ -54,10 +59,19 @@ function buildAppState(): AppState {
       const hasActivePorts = portStates.some((p) => p.status === 'in-use')
       const hasIssue = portStates.some((p) => p.status === 'conflict') ||
                        depStates.some((d) => d.health === 'unhealthy')
+      const isManaged = processManager.isManagedRunning(project.name, compName)
+
+      let processOrigin: ProcessOrigin = 'none'
+      if (isManaged) {
+        processOrigin = 'managed'
+      } else if (hasActivePorts) {
+        processOrigin = 'external'
+      }
 
       components[compName] = {
         name: compName,
         status: hasIssue ? 'warning' : hasActivePorts ? 'running' : 'stopped',
+        processOrigin,
         ports: portStates,
         dependencies: depStates,
         editor: comp.editor,
@@ -165,6 +179,8 @@ app.whenReady().then(() => {
   projectRegistry = new ProjectRegistry(centralConfig)
   portMonitor = new PortMonitor(centralConfig.portScanIntervalMs)
   healthAggregator = new HealthAggregator(10000)
+  processManager = new ProcessManager()
+  logStreamer = new LogStreamer()
 
   // Create tray
   trayWindow = new TrayWindow()
@@ -196,11 +212,85 @@ app.whenReady().then(() => {
       openInEditor(codeDir, editor ?? centralConfig.editor, centralConfig.editors),
     openGitGui: (dir: string) => openInGitGui(dir, centralConfig.gitGui),
     killPort: killProcessOnPort,
-    openDashboard: createDashboardWindow
+    openDashboard: createDashboardWindow,
+    startComponent: async (projectName: string, componentName: string) => {
+      // Find the project and component config
+      for (const [dir, project] of projectRegistry.getProjects()) {
+        if (project.name === projectName) {
+          const comp = project.components[componentName]
+          if (comp && comp.startCommand) {
+            return processManager.startComponent({
+              projectName,
+              componentName,
+              startCommand: comp.startCommand,
+              workDir: comp.workDir ? join(dir, comp.workDir) : dir,
+              projectDir: dir,
+              env: comp.env
+            })
+          }
+        }
+      }
+      throw new Error(`Component ${projectName}/${componentName} not found or has no startCommand`)
+    },
+    stopComponent: (projectName: string, componentName: string) =>
+      processManager.stopComponent(projectName, componentName),
+    startProject: async (projectName: string) => {
+      for (const [dir, project] of projectRegistry.getProjects()) {
+        if (project.name === projectName) {
+          const starts = Object.entries(project.components)
+            .filter(([_, comp]) => comp.startCommand)
+            .map(([compName, comp]) =>
+              processManager.startComponent({
+                projectName,
+                componentName: compName,
+                startCommand: comp.startCommand!,
+                workDir: comp.workDir ? join(dir, comp.workDir) : dir,
+                projectDir: dir,
+                env: comp.env
+              })
+            )
+          await Promise.all(starts)
+          return
+        }
+      }
+    },
+    stopProject: (projectName: string) => processManager.stopProject(projectName),
+    getLog: (projectName: string, componentName: string) => {
+      for (const [dir, project] of projectRegistry.getProjects()) {
+        if (project.name === projectName) {
+          const logFile = join(dir, '.service-starter', 'logs', `${componentName}.log`)
+          return logStreamer.getLog(logFile)
+        }
+      }
+      return ''
+    },
+    startLogTail: (projectName: string, componentName: string) => {
+      for (const [dir, project] of projectRegistry.getProjects()) {
+        if (project.name === projectName) {
+          const logFile = join(dir, '.service-starter', 'logs', `${componentName}.log`)
+          logStreamer.startTailing(logFile)
+          return
+        }
+      }
+    },
+    stopLogTail: (projectName: string, componentName: string) => {
+      for (const [dir, project] of projectRegistry.getProjects()) {
+        if (project.name === projectName) {
+          const logFile = join(dir, '.service-starter', 'logs', `${componentName}.log`)
+          logStreamer.stopTailing(logFile)
+          return
+        }
+      }
+    }
   })
 
   // Start modules
   projectRegistry.start()
+
+  // Reconnect to previously managed processes
+  for (const [dir, _project] of projectRegistry.getProjects()) {
+    processManager.reconnect(dir)
+  }
 
   // Wire up state updates
   projectRegistry.on('project-added', pushState)
@@ -216,6 +306,13 @@ app.whenReady().then(() => {
   )
   healthAggregator.on('health-updated', pushState)
 
+  processManager.on('process-started', pushState)
+  processManager.on('process-stopped', pushState)
+
+  logStreamer.on('log-data', ({ logFile, content }: { logFile: string; content: string }) => {
+    pushLogDataToRenderers(logFile, content)
+  })
+
   // Initial state push
   setTimeout(pushState, 1000)
 })
@@ -227,6 +324,8 @@ app.on('window-all-closed', () => {
 
 // Clean up on quit
 app.on('before-quit', () => {
+  logStreamer?.stopAll()
+  // Note: don't call processManager.stopAll() — processes are detached and should survive
   portMonitor?.stop()
   healthAggregator?.stop()
   projectRegistry?.stop()
