@@ -24,6 +24,7 @@ export interface DependencyStateView {
 export interface ComponentStateView {
   name: string
   status: 'running' | 'stopped' | 'warning'
+  processOrigin: 'managed' | 'external' | 'none'
   ports: PortStateView[]
   dependencies: DependencyStateView[]
   editor?: string
@@ -65,6 +66,10 @@ interface AppContextType {
   openGitGui: (dir: string) => void
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
+  startComponent: (projectName: string, componentName: string) => Promise<unknown>
+  stopComponent: (projectName: string, componentName: string) => Promise<boolean>
+  startProject: (projectName: string) => Promise<unknown>
+  stopProject: (projectName: string) => Promise<unknown>
 }
 
 const AppContext = createContext<AppContextType>({
@@ -73,7 +78,11 @@ const AppContext = createContext<AppContextType>({
   openEditor: () => {},
   openGitGui: () => {},
   killPort: async () => false,
-  openDashboard: () => {}
+  openDashboard: () => {},
+  startComponent: async () => {},
+  stopComponent: async () => false,
+  startProject: async () => {},
+  stopProject: async () => {}
 })
 
 export function AppProvider({ children }: { children: ReactNode }): React.JSX.Element {
@@ -95,7 +104,11 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     openEditor: (codeDir, editor) => window.api.openEditor(codeDir, editor),
     openGitGui: (dir) => window.api.openGitGui(dir),
     killPort: (port) => window.api.killPort(port),
-    openDashboard: () => window.api.openDashboard()
+    openDashboard: () => window.api.openDashboard(),
+    startComponent: (projectName, componentName) => window.api.startComponent(projectName, componentName),
+    stopComponent: (projectName, componentName) => window.api.stopComponent(projectName, componentName),
+    startProject: (projectName) => window.api.startProject(projectName),
+    stopProject: (projectName) => window.api.stopProject(projectName)
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
