@@ -58,60 +58,31 @@ export function ProjectGroup({
           <span className="flex-1 text-[13px] font-medium text-zinc-200 text-left truncate">
             {project.name}
           </span>
-
-          {/* Component count */}
-          <span className="text-[11px] font-mono text-zinc-500 tabular-nums">
-            {runningCount}/{components.length}
-          </span>
         </button>
 
         {/* Project-level action buttons */}
         <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpenTerminal(project.directory)
-            }}
+          <ProjectActionButton
             title="Open in Terminal"
-            className="p-1 rounded hover:bg-white/10 text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              onOpenGitGui(project.directory)
-            }}
+            icon="terminal"
+            onClick={() => onOpenTerminal(project.directory)}
+          />
+          <ProjectActionButton
+            title="Open in Editor"
+            icon="code"
+            onClick={() => onOpenEditor(project.directory)}
+          />
+          <ProjectActionButton
             title="Open in Git GUI"
-            className="p-1 rounded hover:bg-white/10 text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
-              />
-            </svg>
-          </button>
+            icon="git"
+            onClick={() => onOpenGitGui(project.directory)}
+          />
         </div>
+
+        {/* Component count */}
+        <span className="text-[11px] font-mono text-zinc-500 tabular-nums flex-shrink-0">
+          {runningCount}/{components.length}
+        </span>
       </div>
 
       {/* Components list */}
@@ -132,5 +103,60 @@ export function ProjectGroup({
         </div>
       )}
     </div>
+  )
+}
+
+function ProjectActionButton({
+  title,
+  icon,
+  onClick
+}: {
+  title: string
+  icon: 'terminal' | 'code' | 'git'
+  onClick: () => void
+}): React.JSX.Element {
+  const iconMap = {
+    terminal: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3"
+      />
+    ),
+    code: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"
+      />
+    ),
+    git: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+      />
+    )
+  }
+
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation()
+        onClick()
+      }}
+      title={title}
+      className="p-1 rounded hover:bg-white/10 text-zinc-500 hover:text-zinc-300 transition-colors"
+    >
+      <svg
+        className="w-3.5 h-3.5"
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={1.5}
+        stroke="currentColor"
+      >
+        {iconMap[icon]}
+      </svg>
+    </button>
   )
 }
