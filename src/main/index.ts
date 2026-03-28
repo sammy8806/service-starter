@@ -57,8 +57,8 @@ function buildAppState(): AppState {
       })
 
       const hasActivePorts = portStates.some((p) => p.status === 'in-use')
-      const hasIssue = portStates.some((p) => p.status === 'conflict') ||
-                       depStates.some((d) => d.health === 'unhealthy')
+      const hasBoundPortConflict = portStates.some((p) => p.status === 'conflict' && typeof p.pid === 'number')
+      const hasIssue = hasBoundPortConflict || depStates.some((d) => d.health === 'unhealthy')
       const isManaged = processManager.isManagedRunning(project.name, compName)
 
       let processOrigin: ProcessOrigin = 'none'
@@ -70,7 +70,7 @@ function buildAppState(): AppState {
 
       components[compName] = {
         name: compName,
-        status: hasIssue ? 'warning' : hasActivePorts ? 'running' : 'stopped',
+        status: hasActivePorts ? 'running' : hasIssue ? 'warning' : 'stopped',
         processOrigin,
         ports: portStates,
         dependencies: depStates,
