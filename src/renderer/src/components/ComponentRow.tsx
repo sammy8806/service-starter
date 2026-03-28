@@ -3,16 +3,22 @@ import { ComponentStateView } from '../context/AppContext'
 
 interface ComponentRowProps {
   component: ComponentStateView
+  projectName: string
   projectDir: string
   onOpenEditor: (dir: string, editor?: string) => void
   onKillPort: (port: number) => void
+  onStartComponent: (projectName: string, componentName: string) => void
+  onStopComponent: (projectName: string, componentName: string) => void
 }
 
 export function ComponentRow({
   component,
+  projectName,
   projectDir,
   onOpenEditor,
-  onKillPort
+  onKillPort,
+  onStartComponent,
+  onStopComponent
 }: ComponentRowProps): React.JSX.Element {
   const mainPort = component.ports[0]
   const editorDir = component.codeDir ?? component.workDir ?? projectDir
@@ -20,6 +26,9 @@ export function ComponentRow({
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.04] transition-colors">
       <StatusBadge status={component.status} />
+      {component.processOrigin === 'managed' && component.status === 'running' && (
+        <span className="text-[9px] text-emerald-500/60 font-mono uppercase tracking-wider">m</span>
+      )}
 
       <span className="flex-1 text-[13px] text-zinc-300 truncate tracking-tight">
         {component.name}
@@ -27,12 +36,26 @@ export function ComponentRow({
 
       {/* Hover actions - left of port so layout doesn't shift */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+        {component.status === 'stopped' ? (
+          <ActionButton
+            icon="play"
+            title="Start"
+            onClick={() => onStartComponent(projectName, component.name)}
+          />
+        ) : component.processOrigin === 'managed' ? (
+          <ActionButton
+            icon="stop"
+            title="Stop"
+            onClick={() => onStopComponent(projectName, component.name)}
+            danger
+          />
+        ) : null}
         <ActionButton
           icon="code"
           title="Open in Editor"
           onClick={() => onOpenEditor(editorDir, component.editor)}
         />
-        {mainPort && mainPort.status === 'in-use' && (
+        {mainPort && mainPort.status === 'in-use' && component.processOrigin === 'external' && (
           <ActionButton
             icon="kill"
             title={`Kill :${mainPort.port}`}
@@ -66,7 +89,7 @@ function ActionButton({
   onClick,
   danger = false
 }: {
-  icon: 'terminal' | 'code' | 'kill'
+  icon: 'terminal' | 'code' | 'kill' | 'play' | 'stop'
   title: string
   onClick: () => void
   danger?: boolean
@@ -88,6 +111,12 @@ function ActionButton({
     ),
     kill: (
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    ),
+    play: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z" />
+    ),
+    stop: (
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z" />
     )
   }
 
