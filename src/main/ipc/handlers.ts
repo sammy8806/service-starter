@@ -11,6 +11,13 @@ interface HandlerDependencies {
   openGitGui: (dir: string) => void
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
+  startComponent: (projectName: string, componentName: string) => Promise<{ pid: number; logFile: string }>
+  stopComponent: (projectName: string, componentName: string) => Promise<boolean>
+  startProject: (projectName: string) => Promise<void>
+  stopProject: (projectName: string) => Promise<void>
+  getLog: (projectName: string, componentName: string) => string
+  startLogTail: (projectName: string, componentName: string) => void
+  stopLogTail: (projectName: string, componentName: string) => void
 }
 
 /**
@@ -54,6 +61,38 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
   ipcMain.on(IPC_CHANNELS.OPEN_DASHBOARD, () => {
     deps.openDashboard()
   })
+
+  // Process management
+  ipcMain.handle(IPC_CHANNELS.START_COMPONENT, async (_event, projectName: string, componentName: string) => {
+    return deps.startComponent(projectName, componentName)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.STOP_COMPONENT, async (_event, projectName: string, componentName: string) => {
+    return deps.stopComponent(projectName, componentName)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.START_PROJECT, async (_event, projectName: string) => {
+    await deps.startProject(projectName)
+    return true
+  })
+
+  ipcMain.handle(IPC_CHANNELS.STOP_PROJECT, async (_event, projectName: string) => {
+    await deps.stopProject(projectName)
+    return true
+  })
+
+  // Log streaming
+  ipcMain.handle(IPC_CHANNELS.LOG_GET, (_event, projectName: string, componentName: string) => {
+    return deps.getLog(projectName, componentName)
+  })
+
+  ipcMain.on(IPC_CHANNELS.LOG_START_TAIL, (_event, projectName: string, componentName: string) => {
+    deps.startLogTail(projectName, componentName)
+  })
+
+  ipcMain.on(IPC_CHANNELS.LOG_STOP_TAIL, (_event, projectName: string, componentName: string) => {
+    deps.stopLogTail(projectName, componentName)
+  })
 }
 
 /**
@@ -64,6 +103,17 @@ export function pushStateToRenderers(state: AppState): void {
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
       win.webContents.send(IPC_CHANNELS.STATE_UPDATE, serialized)
+    }
+  }
+}
+
+/**
+ * Pushes log data to all renderer windows.
+ */
+export function pushLogDataToRenderers(logFile: string, content: string): void {
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) {
+      win.webContents.send(IPC_CHANNELS.LOG_DATA, { logFile, content })
     }
   }
 }

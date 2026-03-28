@@ -20,6 +20,18 @@ export const IPC_CHANNELS = {
   OPEN_GIT_GUI: 'action:open-git-gui',
   KILL_PORT: 'action:kill-port',
 
+  // Process management
+  START_COMPONENT: 'process:start-component',
+  STOP_COMPONENT: 'process:stop-component',
+  START_PROJECT: 'process:start-project',
+  STOP_PROJECT: 'process:stop-project',
+
+  // Log streaming
+  LOG_GET: 'log:get',
+  LOG_START_TAIL: 'log:start-tail',
+  LOG_STOP_TAIL: 'log:stop-tail',
+  LOG_DATA: 'log:data',
+
   // Window management
   OPEN_DASHBOARD: 'window:open-dashboard',
   CLOSE_WINDOW: 'window:close'
