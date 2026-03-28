@@ -66,7 +66,6 @@ export function TrayDropdown(): React.JSX.Element {
       <PortSummary
         totalPorts={totalPorts}
         activePorts={activePorts}
-        conflicts={state.conflicts}
       />
     </div>
   )

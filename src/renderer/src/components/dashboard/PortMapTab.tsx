@@ -1,4 +1,5 @@
 import { useAppState } from '../../context/AppContext'
+import { ConflictWarningBanner } from './ConflictWarningBanner'
 
 interface PortRow {
   port: number
@@ -34,7 +35,9 @@ export function PortMapTab(): React.JSX.Element {
   portRows.sort((a, b) => a.port - b.port)
 
   return (
-    <div className="p-5">
+    <div className="p-5 space-y-4">
+      <ConflictWarningBanner conflicts={state.conflicts} />
+
       <div className="rounded-lg border border-white/[0.06] overflow-hidden">
         <table className="w-full text-[13px]">
           <thead>
