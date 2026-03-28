@@ -20,6 +20,10 @@ $ npm install
 $ npm run dev
 ```
 
+The Electron renderer dev server defaults to port `5273` instead of Vite's usual `5173`.
+Override it with `ELECTRON_RENDERER_PORT`, and if the chosen port is already in use,
+Vite will automatically move to the next free port.
+
 ### Build
 
 ```bash
