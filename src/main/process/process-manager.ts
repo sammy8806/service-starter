@@ -3,6 +3,7 @@ import { spawn } from 'child_process'
 import { mkdirSync, writeFileSync, readFileSync, existsSync, openSync, closeSync } from 'fs'
 import { join } from 'path'
 import { ManagedProcess, ProcessStateFile } from './types'
+import { scanActivePorts } from '../monitoring/port-scanner'
 
 interface StartComponentOptions {
   projectName: string
@@ -10,6 +11,7 @@ interface StartComponentOptions {
   startCommand: string
   workDir: string
   projectDir: string
+  declaredPorts?: number[]
   env?: Record<string, string>
 }
 
@@ -27,6 +29,12 @@ export class ProcessManager extends EventEmitter {
   private processes = new Map<string, ManagedProcess>()
   // key: "projectName:componentName" -> projectDir (for state file writes)
   private projectDirs = new Map<string, string>()
+
+  constructor(
+    private readonly portScanner: typeof scanActivePorts = scanActivePorts
+  ) {
+    super()
+  }
 
   private key(projectName: string, componentName: string): string {
     return `${projectName}:${componentName}`
@@ -62,6 +70,8 @@ export class ProcessManager extends EventEmitter {
     if (this.processes.has(k)) {
       await this.stopComponent(opts.projectName, opts.componentName)
     }
+
+    await this.assertPortsAvailable(opts)
 
     // Ensure log directory
     const logDir = join(opts.projectDir, '.service-starter', 'logs')
@@ -158,7 +168,7 @@ export class ProcessManager extends EventEmitter {
 
   async stopProject(projectName: string): Promise<void> {
     const toStop: string[] = []
-    for (const [k, proc] of this.processes) {
+    for (const [, proc] of this.processes) {
       if (proc.projectName === projectName) {
         toStop.push(proc.componentName)
       }
@@ -167,7 +177,7 @@ export class ProcessManager extends EventEmitter {
   }
 
   stopAll(): void {
-    for (const [k, proc] of this.processes) {
+    for (const [, proc] of this.processes) {
       try {
         process.kill(-proc.pid, 'SIGTERM')
       } catch {
@@ -194,7 +204,7 @@ export class ProcessManager extends EventEmitter {
       const raw = readFileSync(stateFile, 'utf-8')
       const state: ProcessStateFile = JSON.parse(raw)
 
-      for (const [compName, managed] of Object.entries(state.processes)) {
+      for (const [, managed] of Object.entries(state.processes)) {
         if (this.isProcessAlive(managed.pid)) {
           const k = this.key(managed.projectName, managed.componentName)
           this.processes.set(k, managed)
@@ -230,5 +240,22 @@ export class ProcessManager extends EventEmitter {
     }
 
     writeFileSync(stateFile, JSON.stringify(state, null, 2))
+  }
+
+  private async assertPortsAvailable(opts: StartComponentOptions): Promise<void> {
+    if (!opts.declaredPorts?.length) return
+
+    const activePorts = await this.portScanner()
+    const conflicts = activePorts.filter((active) => opts.declaredPorts!.includes(active.port))
+
+    if (conflicts.length === 0) return
+
+    const details = conflicts
+      .map((conflict) => `:${conflict.port} (${conflict.process} pid ${conflict.pid})`)
+      .join(', ')
+
+    throw new Error(
+      `Cannot start ${opts.projectName}/${opts.componentName}; port already bound: ${details}`
+    )
   }
 }

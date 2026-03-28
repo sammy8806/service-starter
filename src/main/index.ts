@@ -225,6 +225,7 @@ app.whenReady().then(() => {
               startCommand: comp.startCommand,
               workDir: comp.workDir ? join(dir, comp.workDir) : dir,
               projectDir: dir,
+              declaredPorts: comp.ports.map((port) => port.port),
               env: comp.env
             })
           }
@@ -246,6 +247,7 @@ app.whenReady().then(() => {
                 startCommand: comp.startCommand!,
                 workDir: comp.workDir ? join(dir, comp.workDir) : dir,
                 projectDir: dir,
+                declaredPorts: comp.ports.map((port) => port.port),
                 env: comp.env
               })
             )

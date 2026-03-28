@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { ProcessManager } from './process-manager'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from 'fs'
+import { mkdtempSync, readFileSync, existsSync } from 'fs'
 import { join } from 'path'
 import { tmpdir } from 'os'
 
@@ -64,11 +64,44 @@ describe('ProcessManager', () => {
       expect(state.processes.api).toBeDefined()
       expect(state.processes.api.pid).toBeGreaterThan(0)
     })
+
+    it('should allow start when declared ports collide but are not bound', async () => {
+      const pm = new ProcessManager(async () => [])
+
+      const result = await pm.startComponent({
+        projectName: 'test-project',
+        componentName: 'frontend',
+        startCommand: 'node -e "setInterval(() => {}, 1000)"',
+        workDir: tempDir,
+        projectDir: tempDir,
+        declaredPorts: [3000]
+      })
+
+      expect(result.pid).toBeGreaterThan(0)
+      pm.stopAll()
+    })
+
+    it('should block start when a declared port is currently bound', async () => {
+      const pm = new ProcessManager(async () => [
+        { port: 3000, pid: 4321, process: 'node' }
+      ])
+
+      await expect(
+        pm.startComponent({
+          projectName: 'test-project',
+          componentName: 'frontend',
+          startCommand: 'node -e "setInterval(() => {}, 1000)"',
+          workDir: tempDir,
+          projectDir: tempDir,
+          declaredPorts: [3000]
+        })
+      ).rejects.toThrow('Cannot start test-project/frontend; port already bound: :3000 (node pid 4321)')
+    })
   })
 
   describe('stopComponent', () => {
     it('should kill the process and update state', async () => {
-      const result = await pm.startComponent({
+      await pm.startComponent({
         projectName: 'test-project',
         componentName: 'frontend',
         startCommand: 'node -e "setInterval(() => {}, 1000)"',

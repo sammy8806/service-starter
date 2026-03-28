@@ -182,6 +182,8 @@ function ComponentDetail({
   onStopComponent: (projectName: string, componentName: string) => Promise<boolean>
   onViewLog?: (projectName: string, componentName: string) => void
 }): React.JSX.Element {
+  const canStart = component.processOrigin === 'none' && !component.ports.some((port) => port.status === 'in-use')
+
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] border-b border-white/[0.03] last:border-b-0">
       <StatusBadge status={component.status} size="md" />
@@ -213,7 +215,7 @@ function ComponentDetail({
 
       {/* Actions */}
       <div className="flex items-center gap-1">
-        {component.status === 'stopped' ? (
+        {canStart ? (
           <button
             onClick={() => onStartComponent(projectName, component.name)}
             className="px-2 py-1 text-[11px] text-emerald-400/70 hover:text-emerald-400 hover:bg-emerald-400/10 rounded transition-colors"

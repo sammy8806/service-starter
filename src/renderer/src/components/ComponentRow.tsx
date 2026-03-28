@@ -22,6 +22,7 @@ export function ComponentRow({
 }: ComponentRowProps): React.JSX.Element {
   const mainPort = component.ports[0]
   const editorDir = component.codeDir ?? component.workDir ?? projectDir
+  const canStart = component.processOrigin === 'none' && !component.ports.some((port) => port.status === 'in-use')
 
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.04] transition-colors">
@@ -36,7 +37,7 @@ export function ComponentRow({
 
       {/* Hover actions - left of port so layout doesn't shift */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-        {component.status === 'stopped' ? (
+        {canStart ? (
           <ActionButton
             icon="play"
             title="Start"
