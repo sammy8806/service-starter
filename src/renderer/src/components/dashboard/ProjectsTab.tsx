@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useAppState, ProjectStateView, ComponentStateView } from '../../context/AppContext'
 import { StatusBadge } from '../StatusBadge'
+import { LogViewer } from './LogViewer'
 
 export function ProjectsTab(): React.JSX.Element {
   const { state, openTerminal, openEditor, openGitGui, killPort, startComponent, stopComponent, startProject, stopProject } = useAppState()
   const projects = Object.values(state.projects)
+  const [activeLog, setActiveLog] = useState<{ projectName: string; componentName: string } | null>(null)
 
   if (projects.length === 0) {
     return (
@@ -24,21 +26,32 @@ export function ProjectsTab(): React.JSX.Element {
   }
 
   return (
-    <div className="p-5 space-y-3">
-      {projects.map((project) => (
-        <ProjectCard
-          key={project.name}
-          project={project}
-          onOpenTerminal={openTerminal}
-          onOpenEditor={openEditor}
-          onOpenGitGui={openGitGui}
-          onKillPort={killPort}
-          onStartProject={startProject}
-          onStopProject={stopProject}
-          onStartComponent={startComponent}
-          onStopComponent={stopComponent}
+    <div className="flex flex-col flex-1">
+      <div className="p-5 space-y-3 flex-1">
+        {projects.map((project) => (
+          <ProjectCard
+            key={project.name}
+            project={project}
+            onOpenTerminal={openTerminal}
+            onOpenEditor={openEditor}
+            onOpenGitGui={openGitGui}
+            onKillPort={killPort}
+            onStartProject={startProject}
+            onStopProject={stopProject}
+            onStartComponent={startComponent}
+            onStopComponent={stopComponent}
+            onViewLog={(pn, cn) => setActiveLog({ projectName: pn, componentName: cn })}
+          />
+        ))}
+      </div>
+
+      {activeLog && (
+        <LogViewer
+          projectName={activeLog.projectName}
+          componentName={activeLog.componentName}
+          onClose={() => setActiveLog(null)}
         />
-      ))}
+      )}
     </div>
   )
 }
@@ -52,7 +65,8 @@ function ProjectCard({
   onStartProject,
   onStopProject,
   onStartComponent,
-  onStopComponent
+  onStopComponent,
+  onViewLog
 }: {
   project: ProjectStateView
   onOpenTerminal: (dir: string) => void
@@ -63,6 +77,7 @@ function ProjectCard({
   onStopProject: (projectName: string) => Promise<unknown>
   onStartComponent: (projectName: string, componentName: string) => Promise<unknown>
   onStopComponent: (projectName: string, componentName: string) => Promise<boolean>
+  onViewLog: (projectName: string, componentName: string) => void
 }): React.JSX.Element {
   const [expanded, setExpanded] = useState(true)
   const components = Object.values(project.components)
@@ -137,6 +152,7 @@ function ProjectCard({
               onKillPort={onKillPort}
               onStartComponent={onStartComponent}
               onStopComponent={onStopComponent}
+              onViewLog={onViewLog}
             />
           ))}
         </div>
