@@ -19,6 +19,30 @@ const api = {
   openDashboard: () => ipcRenderer.send('window:open-dashboard'),
   closeWindow: () => ipcRenderer.send('window:close'),
 
+  // Process management
+  startComponent: (projectName: string, componentName: string) =>
+    ipcRenderer.invoke('process:start-component', projectName, componentName),
+  stopComponent: (projectName: string, componentName: string) =>
+    ipcRenderer.invoke('process:stop-component', projectName, componentName),
+  startProject: (projectName: string) =>
+    ipcRenderer.invoke('process:start-project', projectName),
+  stopProject: (projectName: string) =>
+    ipcRenderer.invoke('process:stop-project', projectName),
+
+  // Log streaming
+  getLog: (projectName: string, componentName: string) =>
+    ipcRenderer.invoke('log:get', projectName, componentName),
+  startLogTail: (projectName: string, componentName: string) =>
+    ipcRenderer.send('log:start-tail', projectName, componentName),
+  stopLogTail: (projectName: string, componentName: string) =>
+    ipcRenderer.send('log:stop-tail', projectName, componentName),
+  onLogData: (callback: (data: { logFile: string; content: string }) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: { logFile: string; content: string }): void =>
+      callback(data)
+    ipcRenderer.on('log:data', handler)
+    return () => ipcRenderer.removeListener('log:data', handler)
+  },
+
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => callback(state)
