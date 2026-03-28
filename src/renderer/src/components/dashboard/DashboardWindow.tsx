@@ -20,7 +20,7 @@ export function DashboardWindow(): React.JSX.Element {
     <div className="h-screen flex flex-col bg-zinc-900 text-zinc-100">
       {/* Title bar / drag region */}
       <div
-        className="flex items-center justify-between px-5 pt-3 pb-0"
+        className="flex items-center justify-between pl-20 pr-5 pt-3 pb-0"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
         <h1 className="text-base font-semibold tracking-tight text-zinc-200">
