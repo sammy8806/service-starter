@@ -8,6 +8,8 @@ interface ProjectGroupProps {
   onOpenEditor: (dir: string, editor?: string) => void
   onOpenGitGui: (dir: string) => void
   onKillPort: (port: number) => void
+  onStartComponent: (projectName: string, componentName: string) => void
+  onStopComponent: (projectName: string, componentName: string) => void
 }
 
 export function ProjectGroup({
@@ -15,7 +17,9 @@ export function ProjectGroup({
   onOpenTerminal,
   onOpenEditor,
   onOpenGitGui,
-  onKillPort
+  onKillPort,
+  onStartComponent,
+  onStopComponent
 }: ProjectGroupProps): React.JSX.Element {
   const [expanded, setExpanded] = useState(true)
   const components = Object.values(project.components)
@@ -117,9 +121,12 @@ export function ProjectGroup({
             <ComponentRow
               key={comp.name}
               component={comp}
+              projectName={project.name}
               projectDir={project.directory}
               onOpenEditor={onOpenEditor}
               onKillPort={onKillPort}
+              onStartComponent={onStartComponent}
+              onStopComponent={onStopComponent}
             />
           ))}
         </div>

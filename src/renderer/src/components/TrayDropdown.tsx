@@ -3,7 +3,7 @@ import { ProjectGroup } from './ProjectGroup'
 import { PortSummary } from './PortSummary'
 
 export function TrayDropdown(): React.JSX.Element {
-  const { state, openTerminal, openEditor, openGitGui, killPort, openDashboard } = useServiceState()
+  const { state, openTerminal, openEditor, openGitGui, killPort, openDashboard, startComponent, stopComponent } = useServiceState()
 
   const projects = Object.values(state.projects)
   const totalPorts = projects.reduce(
@@ -55,6 +55,8 @@ export function TrayDropdown(): React.JSX.Element {
               onOpenEditor={openEditor}
               onOpenGitGui={openGitGui}
               onKillPort={killPort}
+              onStartComponent={startComponent}
+              onStopComponent={stopComponent}
             />
           ))
         )}
