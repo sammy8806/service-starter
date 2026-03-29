@@ -13,7 +13,7 @@ import { registerIpcHandlers, pushStateToRenderers, pushLogDataToRenderers } fro
 import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort } from './tray/quick-actions'
 import { ProcessManager } from './process/process-manager'
 import { LogStreamer } from './process/log-streamer'
-import { ProcessOrigin } from './config/types'
+import { deriveComponentRuntimeState } from '../shared/component-runtime'
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -56,22 +56,17 @@ function buildAppState(): AppState {
         }
       })
 
-      const hasActivePorts = portStates.some((p) => p.status === 'in-use')
-      const hasBoundPortConflict = portStates.some((p) => p.status === 'conflict' && typeof p.pid === 'number')
-      const hasIssue = hasBoundPortConflict || depStates.some((d) => d.health === 'unhealthy')
       const isManaged = processManager.isManagedRunning(project.name, compName)
-
-      let processOrigin: ProcessOrigin = 'none'
-      if (isManaged) {
-        processOrigin = 'managed'
-      } else if (hasActivePorts) {
-        processOrigin = 'external'
-      }
+      const runtimeState = deriveComponentRuntimeState({
+        portStates,
+        dependencies: depStates,
+        isManaged
+      })
 
       components[compName] = {
         name: compName,
-        status: hasActivePorts ? 'running' : hasIssue ? 'warning' : 'stopped',
-        processOrigin,
+        status: runtimeState.status,
+        processOrigin: runtimeState.processOrigin,
         ports: portStates,
         dependencies: depStates,
         editor: comp.editor,

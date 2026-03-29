@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAppState, ProjectStateView, ComponentStateView } from '../../context/AppContext'
 import { StatusBadge } from '../StatusBadge'
 import { LogViewer } from './LogViewer'
+import { findBoundPort, hasBoundPort } from '../../../../shared/port-state'
 
 export function ProjectsTab(): React.JSX.Element {
   const { state, openTerminal, openEditor, openGitGui, killPort, startComponent, stopComponent, startProject, stopProject } = useAppState()
@@ -182,7 +183,8 @@ function ComponentDetail({
   onStopComponent: (projectName: string, componentName: string) => Promise<boolean>
   onViewLog?: (projectName: string, componentName: string) => void
 }): React.JSX.Element {
-  const canStart = component.processOrigin === 'none' && !component.ports.some((port) => port.status === 'in-use')
+  const canStart = component.processOrigin === 'none' && !hasBoundPort(component.ports)
+  const killablePort = component.processOrigin === 'external' ? findBoundPort(component.ports) : undefined
 
   return (
     <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/[0.02] border-b border-white/[0.03] last:border-b-0">
@@ -229,12 +231,9 @@ function ComponentDetail({
           >
             Stop
           </button>
-        ) : component.ports.some((p) => p.status === 'in-use') ? (
+        ) : killablePort ? (
           <button
-            onClick={() => {
-              const activePort = component.ports.find((p) => p.status === 'in-use')
-              if (activePort) onKillPort(activePort.port)
-            }}
+            onClick={() => onKillPort(killablePort.port)}
             className="px-2 py-1 text-[11px] text-red-400/70 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
           >
             Kill

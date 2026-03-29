@@ -1,25 +1,30 @@
 import { useServiceState } from '../hooks/useServiceState'
 import { ProjectGroup } from './ProjectGroup'
 import { PortSummary } from './PortSummary'
+import { isPortBound } from '../../../shared/port-state'
 
 export function TrayDropdown(): React.JSX.Element {
   const { state, openTerminal, openEditor, openGitGui, killPort, openDashboard, startComponent, stopComponent } = useServiceState()
 
   const projects = Object.values(state.projects)
+  const activePortNumbers = new Set<number>()
   const totalPorts = projects.reduce(
     (sum, p) =>
       sum + Object.values(p.components).reduce((s, c) => s + c.ports.length, 0),
     0
   )
-  const activePorts = projects.reduce(
-    (sum, p) =>
-      sum +
-      Object.values(p.components).reduce(
-        (s, c) => s + c.ports.filter((port) => port.status === 'in-use').length,
-        0
-      ),
-    0
-  )
+
+  for (const project of projects) {
+    for (const component of Object.values(project.components)) {
+      for (const port of component.ports) {
+        if (isPortBound(port)) {
+          activePortNumbers.add(port.port)
+        }
+      }
+    }
+  }
+
+  const activePorts = activePortNumbers.size
 
   return (
     <div className="w-[360px] max-h-[480px] flex flex-col bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-2xl shadow-black/50 overflow-hidden">

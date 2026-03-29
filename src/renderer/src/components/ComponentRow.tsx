@@ -1,5 +1,6 @@
 import { StatusBadge } from './StatusBadge'
 import { ComponentStateView } from '../context/AppContext'
+import { findBoundPort, hasBoundPort } from '../../../shared/port-state'
 
 interface ComponentRowProps {
   component: ComponentStateView
@@ -22,7 +23,8 @@ export function ComponentRow({
 }: ComponentRowProps): React.JSX.Element {
   const mainPort = component.ports[0]
   const editorDir = component.codeDir ?? component.workDir ?? projectDir
-  const canStart = component.processOrigin === 'none' && !component.ports.some((port) => port.status === 'in-use')
+  const canStart = component.processOrigin === 'none' && !hasBoundPort(component.ports)
+  const killablePort = component.processOrigin === 'external' ? findBoundPort(component.ports) : undefined
 
   return (
     <div className="group flex items-center gap-2 px-3 py-1.5 hover:bg-white/[0.04] transition-colors">
@@ -56,11 +58,11 @@ export function ComponentRow({
           title="Open in Editor"
           onClick={() => onOpenEditor(editorDir, component.editor)}
         />
-        {mainPort && mainPort.status === 'in-use' && component.processOrigin === 'external' && (
+        {killablePort && (
           <ActionButton
             icon="kill"
-            title={`Kill :${mainPort.port}`}
-            onClick={() => onKillPort(mainPort.port)}
+            title={`Kill :${killablePort.port}`}
+            onClick={() => onKillPort(killablePort.port)}
             danger
           />
         )}
