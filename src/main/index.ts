@@ -106,7 +106,8 @@ function buildAppState(): AppState {
   return {
     projects,
     trayIcon,
-    conflicts: monitorState.conflicts
+    conflicts: monitorState.conflicts,
+    favorites: []
   }
 }
 

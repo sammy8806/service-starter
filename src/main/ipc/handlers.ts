@@ -123,6 +123,7 @@ function serializeState(state: AppState): Record<string, unknown> {
   return {
     projects: state.projects,
     trayIcon: state.trayIcon,
-    conflicts: state.conflicts
+    conflicts: state.conflicts,
+    favorites: state.favorites
   }
 }

@@ -30,6 +30,7 @@ export interface ComponentStateView {
   editor?: string
   codeDir?: string
   workDir?: string
+  startedAt?: number
 }
 
 export interface ProjectStateView {
@@ -51,12 +52,14 @@ export interface AppStateView {
   projects: Record<string, ProjectStateView>
   trayIcon: 'grey' | 'green' | 'orange'
   conflicts: PortConflictView[]
+  favorites: string[]
 }
 
 const DEFAULT_STATE: AppStateView = {
   projects: {},
   trayIcon: 'grey',
-  conflicts: []
+  conflicts: [],
+  favorites: []
 }
 
 interface AppContextType {

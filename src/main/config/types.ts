@@ -128,6 +128,7 @@ export interface ComponentState {
   editor?: string
   codeDir?: string
   workDir?: string
+  startedAt?: number // epoch ms; only set for managed processes
 }
 
 export interface ProjectState {
@@ -141,6 +142,7 @@ export interface AppState {
   projects: Record<string, ProjectState>
   trayIcon: TrayIconState
   conflicts: PortConflict[]
+  favorites: string[]
 }
 
 export interface PortConflict {
