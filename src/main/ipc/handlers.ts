@@ -18,6 +18,8 @@ interface HandlerDependencies {
   getLog: (projectName: string, componentName: string) => string
   startLogTail: (projectName: string, componentName: string) => void
   stopLogTail: (projectName: string, componentName: string) => void
+  getFavorites: () => string[]
+  toggleFavorite: (projectName: string) => string[]
 }
 
 /**
@@ -40,6 +42,14 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
   ipcMain.handle(IPC_CHANNELS.SAVE_CONFIG, (_event, config: CentralConfig) => {
     deps.saveConfig(config)
     return true
+  })
+
+  ipcMain.handle(IPC_CHANNELS.FAVORITES_GET, () => {
+    return deps.getFavorites()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.FAVORITES_TOGGLE, (_event, projectName: string) => {
+    return deps.toggleFavorite(projectName)
   })
 
   ipcMain.on(IPC_CHANNELS.OPEN_TERMINAL, (_event, workDir: string) => {

@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
 import { loadCentralConfig, saveCentralConfig } from './config/central-config'
+import { loadFavorites, saveFavorites, toggleFavorite as toggleFav } from './config/favorites'
 import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState } from './config/types'
 import { ProjectRegistry } from './discovery/project-registry'
 import { PortMonitor } from './monitoring/monitor'
@@ -18,6 +19,8 @@ import { deriveComponentRuntimeState } from '../shared/component-runtime'
 // ── State ─────────────────────────────────────────────────────────────
 
 let centralConfig: CentralConfig
+let favorites: string[] = []
+const favoritesPath = (): string => join(app.getPath('userData'), 'favorites.json')
 let projectRegistry: ProjectRegistry
 let portMonitor: PortMonitor
 let healthAggregator: HealthAggregator
@@ -63,6 +66,9 @@ function buildAppState(): AppState {
         isManaged
       })
 
+      const managed = processManager.getManagedProcess(project.name, compName)
+      const startedAt = managed ? Date.parse(managed.startedAt) : undefined
+
       components[compName] = {
         name: compName,
         status: runtimeState.status,
@@ -71,7 +77,8 @@ function buildAppState(): AppState {
         dependencies: depStates,
         editor: comp.editor,
         codeDir: comp.codeDir ? join(dir, comp.codeDir) : undefined,
-        workDir: comp.workDir ? join(dir, comp.workDir) : undefined
+        workDir: comp.workDir ? join(dir, comp.workDir) : undefined,
+        startedAt: Number.isNaN(startedAt) ? undefined : startedAt
       }
     }
 
@@ -107,7 +114,7 @@ function buildAppState(): AppState {
     projects,
     trayIcon,
     conflicts: monitorState.conflicts,
-    favorites: []
+    favorites
   }
 }
 
@@ -170,6 +177,7 @@ app.whenReady().then(() => {
 
   // Load config
   centralConfig = loadCentralConfig()
+  favorites = loadFavorites(favoritesPath())
 
   // Initialize modules
   projectRegistry = new ProjectRegistry(centralConfig)
@@ -279,6 +287,13 @@ app.whenReady().then(() => {
           return
         }
       }
+    },
+    getFavorites: () => favorites,
+    toggleFavorite: (projectName: string) => {
+      favorites = toggleFav(favorites, projectName)
+      saveFavorites(favoritesPath(), favorites)
+      pushState()
+      return favorites
     }
   })
 

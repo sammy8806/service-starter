@@ -43,6 +43,10 @@ const api = {
     return () => ipcRenderer.removeListener('log:data', handler)
   },
 
+  // Favorites
+  getFavorites: () => ipcRenderer.invoke('favorites:get'),
+  toggleFavorite: (projectName: string) => ipcRenderer.invoke('favorites:toggle', projectName),
+
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => callback(state)

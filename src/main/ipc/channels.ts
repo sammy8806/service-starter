@@ -34,7 +34,11 @@ export const IPC_CHANNELS = {
 
   // Window management
   OPEN_DASHBOARD: 'window:open-dashboard',
-  CLOSE_WINDOW: 'window:close'
+  CLOSE_WINDOW: 'window:close',
+
+  // Favorites
+  FAVORITES_GET: 'favorites:get',
+  FAVORITES_TOGGLE: 'favorites:toggle'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

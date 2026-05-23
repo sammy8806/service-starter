@@ -20,6 +20,8 @@ export interface ServiceStarterAPI {
   stopLogTail: (projectName: string, componentName: string) => void
   onLogData: (callback: (data: { logFile: string; content: string }) => void) => () => void
   onStateUpdate: (callback: (state: unknown) => void) => () => void
+  getFavorites: () => Promise<string[]>
+  toggleFavorite: (projectName: string) => Promise<string[]>
 }
 
 declare global {
