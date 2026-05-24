@@ -247,11 +247,11 @@ export function TrayDropdown(): React.JSX.Element {
         </button>
       </div>
 
-      {/* Combined stats + search — single thin row */}
-      <div className="flex items-center gap-3 px-3 border-b border-white/[0.06]" style={{ minHeight: 0 }}>
-        <span className="flex items-center gap-1.5 text-[11px] text-zinc-500 flex-shrink-0 py-1.5">
+      {/* Stats + search — single thin row; input only visible when active */}
+      <div className="flex items-center gap-2 px-3 py-1 border-b border-white/[0.06]">
+        <span className="flex items-center gap-1.5 text-[10px] text-zinc-500 flex-shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="font-mono tabular-nums text-zinc-300">{runningCount}</span> running
+          <span className="font-mono tabular-nums text-zinc-400">{runningCount}</span> running
         </span>
         <input
           ref={searchRef}
@@ -268,9 +268,16 @@ export function TrayDropdown(): React.JSX.Element {
               setSearchQuery('')
             }
           }}
-          className="flex-1 min-w-0 bg-transparent text-[11px] text-zinc-400 placeholder:text-zinc-700 outline-none py-1.5"
+          className={`min-w-0 bg-transparent text-[11px] text-zinc-300 placeholder:text-zinc-600 outline-none transition-all duration-150 ${
+            isSearchFocused || searchQuery ? 'flex-1 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+          }`}
         />
-        <kbd className="text-[9px] text-zinc-700 font-mono flex-shrink-0">⌘F</kbd>
+        <kbd
+          onClick={() => searchRef.current?.focus()}
+          className="text-[9px] text-zinc-700 font-mono flex-shrink-0 cursor-pointer hover:text-zinc-500 transition-colors ml-auto"
+        >
+          ⌘F
+        </kbd>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700">

@@ -46,7 +46,7 @@ describe('ActiveProjectsSection', () => {
     expect(screen.getByText('api')).toBeInTheDocument()
   })
 
-  it('collapses a project when it is in collapsedProjects', () => {
+  it('keeps running components visible when project is collapsed', () => {
     render(
       <ActiveProjectsSection
         {...handlers}
@@ -54,6 +54,7 @@ describe('ActiveProjectsSection', () => {
         collapsedProjects={new Set(['bandai'])}
       />
     )
-    expect(screen.queryByText('api')).not.toBeInTheDocument()
+    // api is running — must remain visible even when collapsed
+    expect(screen.getByText('api')).toBeInTheDocument()
   })
 })

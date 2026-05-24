@@ -60,9 +60,10 @@ describe('ProjectGroup', () => {
     expect(onToggleFavorite).toHaveBeenCalledWith('bandai')
   })
 
-  it('hides components when collapsed', () => {
+  it('hides idle components when collapsed but keeps running ones visible', () => {
     render(<ProjectGroup {...baseProps} expanded={false} />)
-    expect(screen.queryByText('frontend')).not.toBeInTheDocument()
+    expect(screen.getByText('frontend')).toBeInTheDocument()
+    expect(screen.queryByText('docs')).not.toBeInTheDocument()
   })
 
   it('toggles expansion when the header is clicked', async () => {

@@ -105,23 +105,26 @@ export function ProjectGroup({
         </span>
       </div>
 
-      {expanded && (
-        <div className="pb-1">
-          {components.map(({ component }) => (
-            <ComponentRow
-              key={component.name}
-              component={component}
-              projectName={project.name}
-              projectDir={project.directory}
-              selected={selectedId === `${project.name}/${component.name}`}
-              now={now}
-              onStartComponent={onStartComponent}
-              onStopComponent={onStopComponent}
-              onShowContextMenu={() => onShowComponentMenu(component.name)}
-            />
-          ))}
-        </div>
-      )}
+      {(() => {
+        const visible = expanded ? components : components.filter((c) => c.component.status === 'running')
+        return visible.length > 0 ? (
+          <div className={expanded ? 'pb-1' : ''}>
+            {visible.map(({ component }) => (
+              <ComponentRow
+                key={component.name}
+                component={component}
+                projectName={project.name}
+                projectDir={project.directory}
+                selected={selectedId === `${project.name}/${component.name}`}
+                now={now}
+                onStartComponent={onStartComponent}
+                onStopComponent={onStopComponent}
+                onShowContextMenu={() => onShowComponentMenu(component.name)}
+              />
+            ))}
+          </div>
+        ) : null
+      })()}
     </div>
   )
 }
