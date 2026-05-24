@@ -1,13 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { SearchBar } from './SearchBar'
 
 describe('SearchBar', () => {
-  it('reports typed input through onChange', async () => {
+  it('reports typed input through onChange', () => {
     const onChange = vi.fn()
     render(<SearchBar value="" onChange={onChange} onFocusChange={vi.fn()} />)
-    await userEvent.type(screen.getByPlaceholderText('Search…'), 'api')
+    fireEvent.change(screen.getByPlaceholderText('Search…'), { target: { value: 'api' } })
     expect(onChange).toHaveBeenLastCalledWith('api')
   })
 

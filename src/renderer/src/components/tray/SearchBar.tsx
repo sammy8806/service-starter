@@ -1,4 +1,4 @@
-import { forwardRef, useState, useEffect } from 'react'
+import { forwardRef } from 'react'
 
 interface SearchBarProps {
   value: string
@@ -10,12 +10,6 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
   { value, onChange, onFocusChange },
   ref
 ): React.JSX.Element {
-  const [internal, setInternal] = useState(value)
-
-  useEffect(() => {
-    setInternal(value)
-  }, [value])
-
   return (
     <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06]">
       <svg className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -23,20 +17,18 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
       </svg>
       <input
         ref={ref}
-        value={internal}
+        value={value}
         placeholder="Search…"
         spellCheck={false}
         onChange={(e) => {
-          setInternal(e.target.value)
           onChange(e.target.value)
         }}
         onFocus={() => onFocusChange(true)}
         onBlur={() => onFocusChange(false)}
         onKeyDown={(e) => {
-          if (e.key === 'Escape' && internal.length > 0) {
+          if (e.key === 'Escape' && value.length > 0) {
             e.preventDefault()
             e.stopPropagation()
-            setInternal('')
             onChange('')
           }
         }}
