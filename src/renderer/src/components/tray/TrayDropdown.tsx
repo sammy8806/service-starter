@@ -253,32 +253,28 @@ export function TrayDropdown(): React.JSX.Element {
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           <span className="font-mono tabular-nums text-zinc-400">{runningCount}</span> running
         </span>
-        {/* Grid trick: grid-template-columns transitions from 0fr→1fr for a smooth slide */}
-        <div
-          className={`grid overflow-hidden transition-all duration-200 ease-in-out flex-1 min-w-0 ${
+        {/* self-stretch: fills container height without pushing it taller; max-width slides open */}
+        <input
+          ref={searchRef}
+          value={searchQuery}
+          placeholder="Search…"
+          spellCheck={false}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setIsSearchFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && searchQuery.length > 0) {
+              e.preventDefault()
+              e.stopPropagation()
+              setSearchQuery('')
+            }
+          }}
+          className={`self-stretch flex-1 bg-transparent text-[11px] text-zinc-300 placeholder:text-zinc-600 outline-none overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
             isSearchFocused || searchQuery
-              ? 'grid-cols-[1fr] opacity-100'
-              : 'grid-cols-[0fr] opacity-0 pointer-events-none'
+              ? 'max-w-[280px] opacity-100'
+              : 'max-w-0 opacity-0 pointer-events-none'
           }`}
-        >
-          <input
-            ref={searchRef}
-            value={searchQuery}
-            placeholder="Search…"
-            spellCheck={false}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onFocus={() => setIsSearchFocused(true)}
-            onBlur={() => setIsSearchFocused(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape' && searchQuery.length > 0) {
-                e.preventDefault()
-                e.stopPropagation()
-                setSearchQuery('')
-              }
-            }}
-            className="min-w-0 overflow-hidden w-full bg-transparent text-[11px] text-zinc-300 placeholder:text-zinc-600 outline-none"
-          />
-        </div>
+        />
         <button
           onClick={() => searchRef.current?.focus()}
           title="Search (⌘F)"
