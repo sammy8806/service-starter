@@ -1,5 +1,5 @@
 import { AppProvider } from './context/AppContext'
-import { TrayDropdown } from './components/TrayDropdown'
+import { TrayDropdown } from './components/tray/TrayDropdown'
 import { DashboardWindow } from './components/dashboard/DashboardWindow'
 
 function App(): React.JSX.Element {
