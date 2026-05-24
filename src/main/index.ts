@@ -3,7 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
 import { loadCentralConfig, saveCentralConfig } from './config/central-config'
-import { loadFavorites, saveFavorites, toggleFavorite as toggleFav } from './config/favorites'
+import { loadFavorites, saveFavorites, toggleFavorite as toggleFav, isFavorite } from './config/favorites'
 import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState } from './config/types'
 import { ProjectRegistry } from './discovery/project-registry'
 import { PortMonitor } from './monitoring/monitor'
@@ -12,6 +12,7 @@ import { TrayManager } from './tray/tray-manager'
 import { TrayWindow } from './tray/tray-window'
 import { registerIpcHandlers, pushStateToRenderers, pushLogDataToRenderers } from './ipc/handlers'
 import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort, getProcessInfo, openManifest } from './tray/quick-actions'
+import { registerContextMenuIpc } from './tray/context-menus'
 import { ProcessManager } from './process/process-manager'
 import { LogStreamer } from './process/log-streamer'
 import { deriveComponentRuntimeState } from '../shared/component-runtime'
@@ -226,6 +227,23 @@ app.whenReady().then(() => {
     throw new Error(`Component ${projectName}/${componentName} not found or has no startCommand`)
   }
 
+  // ── Helper: confirm and stop all managed services ─────────────────
+  async function confirmAndStopAll(): Promise<void> {
+    const choice = dialog.showMessageBoxSync({
+      type: 'warning',
+      buttons: ['Stop all', 'Cancel'],
+      defaultId: 1,
+      cancelId: 1,
+      message: 'Stop all managed services?',
+      detail: 'This stops every service that Service Starter started.'
+    })
+    if (choice !== 0) return
+    const managed = processManager.getManagedProcesses()
+    await Promise.all(
+      [...managed.values()].map((m) => processManager.stopComponent(m.projectName, m.componentName))
+    )
+  }
+
   // Register IPC handlers
   registerIpcHandlers({
     getState: buildAppState,
@@ -305,21 +323,7 @@ app.whenReady().then(() => {
       await processManager.stopComponent(projectName, componentName)
       await startComponentByName(projectName, componentName)
     },
-    stopAllManaged: async () => {
-      const choice = dialog.showMessageBoxSync({
-        type: 'warning',
-        buttons: ['Stop all', 'Cancel'],
-        defaultId: 1,
-        cancelId: 1,
-        message: 'Stop all managed services?',
-        detail: 'This stops every service that Service Starter started.'
-      })
-      if (choice !== 0) return
-      const managed = processManager.getManagedProcesses()
-      await Promise.all(
-        [...managed.values()].map((p) => processManager.stopComponent(p.projectName, p.componentName))
-      )
-    },
+    stopAllManaged: confirmAndStopAll,
     copyToClipboard: (text: string) => clipboard.writeText(text),
     editManifest: (projectDir: string) =>
       openManifest(projectDir, centralConfig.editor, centralConfig.editors),
@@ -335,6 +339,53 @@ app.whenReady().then(() => {
       // v1: open the dashboard. Deep-linking to the component's Logs tab is a follow-up.
       createDashboardWindow()
     }
+  })
+
+  registerContextMenuIpc({
+    startComponent: (p, c) => { void startComponentByName(p, c) },
+    stopComponent: (p, c) => { void processManager.stopComponent(p, c) },
+    restartComponent: async (p, c) => {
+      await processManager.stopComponent(p, c)
+      await startComponentByName(p, c)
+    },
+    startProject: (p) => {
+      const managed = processManager.getManagedProcesses()
+      for (const [_dir, project] of projectRegistry.getProjects()) {
+        if (project.name !== p) continue
+        for (const [compName, comp] of Object.entries(project.components)) {
+          const alreadyRunning = [...managed.values()].some(
+            (m) => m.projectName === p && m.componentName === compName
+          )
+          if (comp.startCommand && !alreadyRunning) void startComponentByName(p, compName)
+        }
+      }
+    },
+    stopProjectManaged: (p) => { void processManager.stopProject(p) },
+    killPort: (port) => { void killProcessOnPort(port) },
+    openTerminal: (dir) => openInTerminal(dir, centralConfig.terminal),
+    openEditor: (dir) => openInEditor(dir, centralConfig.editor, centralConfig.editors),
+    openGitGui: (dir) => openInGitGui(dir, centralConfig.gitGui),
+    copyToClipboard: (text) => clipboard.writeText(text),
+    editManifest: (dir) => openManifest(dir, centralConfig.editor, centralConfig.editors),
+    showProcessInfo: (pid) => {
+      void getProcessInfo(pid).then((info) => {
+        void dialog.showMessageBox({
+          type: 'info',
+          message: `Process ${pid}`,
+          detail: info ?? 'Process not found (it may have exited).'
+        })
+      })
+    },
+    tailLogs: () => createDashboardWindow(),
+    toggleFavorite: (p) => {
+      favorites = toggleFav(favorites, p)
+      saveFavorites(favoritesPath(), favorites)
+      pushState()
+    },
+    isFavorite: (p) => isFavorite(favorites, p),
+    openDashboard: createDashboardWindow,
+    openSettings: createDashboardWindow,
+    stopAllManaged: () => { void confirmAndStopAll() }
   })
 
   // Start modules

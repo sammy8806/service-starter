@@ -1,5 +1,21 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
+export type ContextMenuType =
+  | 'running-service'
+  | 'idle-service'
+  | 'conflict-service'
+  | 'active-project'
+  | 'idle-project'
+  | 'footer'
+
+export interface ContextMenuPayload {
+  projectName: string
+  projectDir?: string
+  componentName?: string
+  port?: number
+  pid?: number
+}
+
 export interface ServiceStarterAPI {
   getState: () => Promise<unknown>
   getProjects: () => Promise<unknown>
@@ -28,6 +44,7 @@ export interface ServiceStarterAPI {
   editManifest: (projectDir: string) => void
   showProcessInfo: (pid: number) => void
   tailLogs: (projectName: string, componentName: string) => void
+  showContextMenu: (type: ContextMenuType, payload: ContextMenuPayload) => void
 }
 
 declare global {

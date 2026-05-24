@@ -56,6 +56,8 @@ const api = {
   showProcessInfo: (pid: number) => ipcRenderer.send('action:show-process-info', pid),
   tailLogs: (projectName: string, componentName: string) =>
     ipcRenderer.send('log:tail-open', projectName, componentName),
+  showContextMenu: (type: string, payload: unknown) =>
+    ipcRenderer.send('menu:show', type, payload),
 
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {

@@ -46,7 +46,8 @@ export const IPC_CHANNELS = {
   COPY_TO_CLIPBOARD: 'action:copy',
   EDIT_MANIFEST: 'action:edit-manifest',
   SHOW_PROCESS_INFO: 'action:show-process-info',
-  TAIL_LOGS: 'log:tail-open'
+  TAIL_LOGS: 'log:tail-open',
+  SHOW_CONTEXT_MENU: 'menu:show'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]
