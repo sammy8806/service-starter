@@ -2,8 +2,8 @@ import { BrowserWindow, screen } from 'electron'
 import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 
-const WINDOW_WIDTH = 360
-const WINDOW_HEIGHT = 480
+const WINDOW_WIDTH = 420
+const WINDOW_HEIGHT = 560
 
 /**
  * Manages the tray dropdown BrowserWindow.
