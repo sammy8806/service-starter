@@ -27,6 +27,7 @@ export interface ContextMenuDeps {
   openTerminal: (dir: string) => void
   openEditor: (dir: string) => void
   openGitGui: (dir: string) => void
+  openInBrowser: (url: string) => void
   copyToClipboard: (text: string) => void
   editManifest: (projectDir: string) => void
   showProcessInfo: (pid: number) => void
@@ -53,6 +54,8 @@ function buildTemplate(
   switch (type) {
     case 'running-service':
       return [
+        { label: 'Open in Browser', enabled: !!url, click: () => d.openInBrowser(url) },
+        SEP,
         { label: 'Stop', click: () => d.stopComponent(p.projectName, comp) },
         { label: 'Restart', click: () => d.restartComponent(p.projectName, comp) },
         SEP,

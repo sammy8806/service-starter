@@ -248,7 +248,7 @@ export function TrayDropdown(): React.JSX.Element {
       </div>
 
       {/* Stats + search — single thin row; input only visible when active */}
-      <div className="flex items-center gap-2 px-3 py-1 border-b border-white/[0.06]">
+      <div className="flex items-center gap-2 px-3 py-0.5 border-b border-white/[0.06]">
         <span className="flex items-center gap-1.5 text-[10px] text-zinc-500 flex-shrink-0">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
           <span className="font-mono tabular-nums text-zinc-400">{runningCount}</span> running
@@ -269,15 +269,20 @@ export function TrayDropdown(): React.JSX.Element {
             }
           }}
           className={`min-w-0 bg-transparent text-[11px] text-zinc-300 placeholder:text-zinc-600 outline-none transition-all duration-150 ${
-            isSearchFocused || searchQuery ? 'flex-1 opacity-100' : 'w-0 opacity-0 pointer-events-none'
+            isSearchFocused || searchQuery
+              ? 'flex-1 opacity-100'
+              : 'w-0 h-0 overflow-hidden opacity-0 pointer-events-none'
           }`}
         />
-        <kbd
+        <button
           onClick={() => searchRef.current?.focus()}
-          className="text-[9px] text-zinc-700 font-mono flex-shrink-0 cursor-pointer hover:text-zinc-500 transition-colors ml-auto"
+          title="Search (⌘F)"
+          className="p-0.5 rounded text-zinc-600 hover:text-zinc-400 transition-colors flex-shrink-0 ml-auto"
         >
-          ⌘F
-        </kbd>
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.3-4.3M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z" />
+          </svg>
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700">

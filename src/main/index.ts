@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog, ipcMain } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -368,6 +368,7 @@ app.whenReady().then(() => {
     openTerminal: (dir) => openInTerminal(dir, centralConfig.terminal),
     openEditor: (dir) => openInEditor(dir, centralConfig.editor, centralConfig.editors),
     openGitGui: (dir) => openInGitGui(dir, centralConfig.gitGui),
+    openInBrowser: (url) => { void shell.openExternal(url) },
     copyToClipboard: (text) => clipboard.writeText(text),
     editManifest: (dir) => openManifest(dir, centralConfig.editor, centralConfig.editors),
     showProcessInfo: (pid) => {
