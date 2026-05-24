@@ -247,13 +247,12 @@ export function TrayDropdown(): React.JSX.Element {
         </button>
       </div>
 
-      {/* Stats + search — single thin row; input only visible when active */}
-      <div className="flex items-center gap-2 px-3 py-0.5 border-b border-white/[0.06]">
-        <span className="flex items-center gap-1.5 text-[10px] text-zinc-500 flex-shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+      {/* Stats + search — fixed-height row so the input can't push it taller */}
+      <div className="flex items-center gap-2 px-3 h-[22px] overflow-hidden border-b border-white/[0.06]">
+        <span className="flex items-center gap-1.5 text-[10px] text-zinc-500 flex-shrink-0 leading-none">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0" />
           <span className="font-mono tabular-nums text-zinc-400">{runningCount}</span> running
         </span>
-        {/* self-stretch: fills container height without pushing it taller; max-width slides open */}
         <input
           ref={searchRef}
           value={searchQuery}
@@ -269,7 +268,7 @@ export function TrayDropdown(): React.JSX.Element {
               setSearchQuery('')
             }
           }}
-          className={`self-stretch flex-1 bg-transparent text-[11px] text-zinc-300 placeholder:text-zinc-600 outline-none overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
+          className={`self-stretch flex-1 appearance-none bg-transparent text-[11px] text-zinc-300 placeholder:text-zinc-600 outline-none overflow-hidden transition-[max-width,opacity] duration-200 ease-in-out ${
             isSearchFocused || searchQuery
               ? 'max-w-[280px] opacity-100'
               : 'max-w-0 opacity-0 pointer-events-none'
@@ -278,7 +277,7 @@ export function TrayDropdown(): React.JSX.Element {
         <button
           onClick={() => searchRef.current?.focus()}
           title="Search (⌘F)"
-          className="p-0.5 rounded text-zinc-600 hover:text-zinc-400 transition-colors flex-shrink-0 ml-auto"
+          className="flex-shrink-0 ml-auto text-zinc-600 hover:text-zinc-400 transition-colors"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.3-4.3M16.5 10.5a6 6 0 11-12 0 6 6 0 0112 0z" />
