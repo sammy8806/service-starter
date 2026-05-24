@@ -1,40 +1,58 @@
-import { useState } from 'react'
 import { ComponentRow } from './ComponentRow'
 import { ProjectStateView } from '../../context/AppContext'
+import { ComponentRowData } from '../../utils/sortServices'
+import { ContextMenuTrigger } from './ContextMenuTrigger'
 
 interface ProjectGroupProps {
   project: ProjectStateView
-  onOpenTerminal: (dir: string) => void
-  onOpenEditor: (dir: string, editor?: string) => void
-  onOpenGitGui: (dir: string) => void
-  onKillPort: (port: number) => void
+  components: ComponentRowData[]
+  expanded: boolean
+  isFavorite: boolean
+  runningCount: number
+  totalCount: number
+  selectedId: string | null
+  now: number
+  showStar?: boolean
+  onToggleExpanded: (projectName: string) => void
+  onToggleFavorite: (projectName: string) => void
   onStartComponent: (projectName: string, componentName: string) => void
   onStopComponent: (projectName: string, componentName: string) => void
+  onShowProjectMenu: () => void
+  onShowComponentMenu: (componentName: string) => void
 }
 
 export function ProjectGroup({
   project,
-  onOpenTerminal,
-  onOpenEditor,
-  onOpenGitGui,
-  onKillPort,
+  components,
+  expanded,
+  isFavorite,
+  runningCount,
+  totalCount,
+  selectedId,
+  now,
+  showStar = false,
+  onToggleExpanded,
+  onToggleFavorite,
   onStartComponent,
-  onStopComponent
+  onStopComponent,
+  onShowProjectMenu,
+  onShowComponentMenu
 }: ProjectGroupProps): React.JSX.Element {
-  const [expanded, setExpanded] = useState(true)
-  const components = Object.values(project.components)
-  const runningCount = components.filter((c) => c.status === 'running').length
-  const hasWarning = components.some((c) => c.status === 'warning')
+  const headerSelected = selectedId === project.name
+  const dotColor = runningCount > 0 ? 'bg-emerald-400' : 'bg-zinc-600'
 
   return (
     <div className="border-b border-white/[0.06] last:border-b-0">
-      {/* Project header */}
-      <div className="group flex items-center gap-2 px-3 py-2 hover:bg-white/[0.04] transition-colors">
+      <div
+        className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
+          headerSelected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
+        }`}
+      >
         <button
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => onToggleExpanded(project.name)}
+          aria-label={project.name}
           className="flex items-center gap-2 flex-1 min-w-0"
         >
-          {/* Expand/collapse chevron */}
           <svg
             className={`w-3 h-3 text-zinc-500 transition-transform duration-150 flex-shrink-0 ${
               expanded ? 'rotate-90' : ''
@@ -46,117 +64,64 @@ export function ProjectGroup({
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
           </svg>
-
-          {/* Running indicator */}
-          <span
-            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-              hasWarning ? 'bg-amber-400' : runningCount > 0 ? 'bg-emerald-400' : 'bg-zinc-600'
-            }`}
-          />
-
-          {/* Project name */}
-          <span className="flex-1 text-[13px] font-medium text-zinc-200 text-left truncate">
+          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+          <span className="flex-1 text-[13.5px] font-medium text-zinc-200 text-left truncate">
             {project.name}
           </span>
         </button>
 
-        {/* Project-level action buttons */}
-        <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-          <ProjectActionButton
-            title="Open in Terminal"
-            icon="terminal"
-            onClick={() => onOpenTerminal(project.directory)}
-          />
-          <ProjectActionButton
-            title="Open in Editor"
-            icon="code"
-            onClick={() => onOpenEditor(project.directory)}
-          />
-          <ProjectActionButton
-            title="Open in Git GUI"
-            icon="git"
-            onClick={() => onOpenGitGui(project.directory)}
-          />
-        </div>
+        {showStar && (
+          <button
+            aria-label={isFavorite ? `Unpin ${project.name}` : `Pin ${project.name}`}
+            title={isFavorite ? 'Unpin project' : 'Pin project'}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggleFavorite(project.name)
+            }}
+            className={`p-1 rounded transition opacity-70 hover:opacity-100 hover:bg-white/10 ${
+              isFavorite ? 'text-amber-300' : 'text-zinc-500 hover:text-zinc-300'
+            }`}
+          >
+            <svg
+              className="w-3.5 h-3.5"
+              fill={isFavorite ? 'currentColor' : 'none'}
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M11.48 3.5l2.2 4.46 4.92.72-3.56 3.47.84 4.9-4.4-2.31-4.4 2.31.84-4.9-3.56-3.47 4.92-.72 2.2-4.46z"
+              />
+            </svg>
+          </button>
+        )}
 
-        {/* Component count */}
+        <ContextMenuTrigger onShow={onShowProjectMenu} label="More actions" />
+
         <span className="text-[11px] font-mono text-zinc-500 tabular-nums flex-shrink-0">
-          {runningCount}/{components.length}
+          {runningCount}/{totalCount}
         </span>
       </div>
 
-      {/* Components list */}
       {expanded && (
         <div className="pb-1">
-          {components.map((comp) => (
+          {components.map(({ component }) => (
             <ComponentRow
-              key={comp.name}
-              component={comp}
+              key={component.name}
+              component={component}
               projectName={project.name}
               projectDir={project.directory}
-              onOpenEditor={onOpenEditor}
-              onKillPort={onKillPort}
+              selected={selectedId === `${project.name}/${component.name}`}
+              now={now}
               onStartComponent={onStartComponent}
               onStopComponent={onStopComponent}
+              onShowContextMenu={() => onShowComponentMenu(component.name)}
             />
           ))}
         </div>
       )}
     </div>
-  )
-}
-
-function ProjectActionButton({
-  title,
-  icon,
-  onClick
-}: {
-  title: string
-  icon: 'terminal' | 'code' | 'git'
-  onClick: () => void
-}): React.JSX.Element {
-  const iconMap = {
-    terminal: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3"
-      />
-    ),
-    code: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5"
-      />
-    ),
-    git: (
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M7.5 21L3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
-      />
-    )
-  }
-
-  return (
-    <button
-      onClick={(e) => {
-        e.stopPropagation()
-        onClick()
-      }}
-      title={title}
-      className="p-1 rounded hover:bg-white/10 text-zinc-500 hover:text-zinc-300 transition-colors"
-    >
-      <svg
-        className="w-3.5 h-3.5"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-      >
-        {iconMap[icon]}
-      </svg>
-    </button>
   )
 }
