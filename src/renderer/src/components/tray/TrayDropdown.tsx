@@ -222,11 +222,15 @@ export function TrayDropdown(): React.JSX.Element {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const observer = new ResizeObserver(() => {
-      window.api.resizeWindow(el.getBoundingClientRect().height)
-    })
+    const sendHeight = (): void => window.api.resizeWindow(el.scrollHeight)
+    const observer = new ResizeObserver(sendHeight)
     observer.observe(el)
-    return () => observer.disconnect()
+    // Also sync on window focus (covers the show-before-first-resize-event race).
+    window.addEventListener('focus', sendHeight)
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('focus', sendHeight)
+    }
   }, [])
 
   const empty = Object.keys(state.projects).length === 0
@@ -236,7 +240,7 @@ export function TrayDropdown(): React.JSX.Element {
       ref={containerRef}
       onKeyDown={onKeyDown}
       tabIndex={-1}
-      className="w-[420px] max-h-[560px] flex flex-col bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-2xl shadow-black/50 overflow-hidden outline-none"
+      className="w-[420px] max-h-[680px] flex flex-col bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-2xl shadow-black/50 overflow-hidden outline-none"
     >
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06]">
         <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Services</span>

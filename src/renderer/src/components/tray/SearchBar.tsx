@@ -11,8 +11,8 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
   ref
 ): React.JSX.Element {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06]">
-      <svg className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+    <div className={`flex items-center gap-2 px-3 py-0.5 border-b border-white/[0.04] transition-opacity ${value ? 'opacity-100' : 'opacity-40 focus-within:opacity-100'}`}>
+      <svg className="w-3 h-3 text-zinc-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.3-4.3m1.8-4.7a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z" />
       </svg>
       <input
@@ -32,9 +32,9 @@ export const SearchBar = forwardRef<HTMLInputElement, SearchBarProps>(function S
             onChange('')
           }
         }}
-        className="flex-1 min-w-0 bg-transparent text-[13px] text-zinc-200 placeholder:text-zinc-600 outline-none"
+        className="flex-1 min-w-0 bg-transparent text-[11px] text-zinc-200 placeholder:text-zinc-600 outline-none"
       />
-      <kbd className="text-[10px] text-zinc-600 font-mono flex-shrink-0">⌘F</kbd>
+      <kbd className="text-[9px] text-zinc-700 font-mono flex-shrink-0">⌘F</kbd>
     </div>
   )
 })

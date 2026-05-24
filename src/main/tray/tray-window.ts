@@ -3,7 +3,7 @@ import { join } from 'path'
 import { is } from '@electron-toolkit/utils'
 
 const WINDOW_WIDTH = 420
-const WINDOW_HEIGHT = 560
+const WINDOW_HEIGHT = 680
 
 /**
  * Manages the tray dropdown BrowserWindow.
@@ -95,7 +95,7 @@ export class TrayWindow {
 
   resize(height: number): void {
     if (!this.window || this.window.isDestroyed()) return
-    const capped = Math.max(80, Math.min(Math.ceil(height), 560))
+    const capped = Math.max(80, Math.min(Math.ceil(height), 680))
     this.window.setContentSize(WINDOW_WIDTH, capped, false)
   }
 
