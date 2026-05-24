@@ -74,7 +74,7 @@ export function sortServices(state: AppStateView, favorites: string[]): SortedSe
       components: sortedRows
     }
 
-    if (rows.some((r) => r.isRunning || r.isConflicting)) active.push(projectRow)
+    if (rows.some((r) => r.isRunning)) active.push(projectRow)
     else idle.push(projectRow)
   }
 

@@ -18,6 +18,7 @@ const api = {
   // Window management
   openDashboard: () => ipcRenderer.send('window:open-dashboard'),
   closeWindow: () => ipcRenderer.send('window:close'),
+  resizeWindow: (height: number) => ipcRenderer.send('window:resize', height),
 
   // Process management
   startComponent: (projectName: string, componentName: string) =>

@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useAppState } from '../../context/AppContext'
 import { isPortBound } from '../../../../shared/port-state'
-import { sortServices, ProjectRow, ConflictRow } from '../../utils/sortServices'
+import { sortServices, ProjectRow } from '../../utils/sortServices'
 import { searchMatcher } from '../../utils/searchMatcher'
 import { KpiStrip } from './KpiStrip'
 import { SearchBar } from './SearchBar'
-import { ConflictsSection } from './ConflictsSection'
 import { ActiveProjectsSection } from './ActiveProjectsSection'
 import { IdleProjectsSection } from './IdleProjectsSection'
 import { FooterActions } from './FooterActions'
 
 interface FlatRow {
   id: string
-  kind: 'conflict' | 'project' | 'component'
+  kind: 'project' | 'component'
   projectName: string
   componentName?: string
 }
@@ -21,6 +20,7 @@ export function TrayDropdown(): React.JSX.Element {
   const ctx = useAppState()
   const { state } = ctx
   const searchRef = useRef<HTMLInputElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const [searchQuery, setSearchQuery] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
@@ -50,21 +50,15 @@ export function TrayDropdown(): React.JSX.Element {
       return { ...row, components: comps }
     }
 
-    const conflicts: ConflictRow[] = sections.conflicts.filter((c) =>
-      searchMatcher(searchQuery, { projectName: c.primaryLabel, ports: [c.port] })
-    )
     const active = sections.active.map(matchProject).filter((r): r is ProjectRow => r !== null)
     const idle = sections.idle.map(matchProject).filter((r): r is ProjectRow => r !== null)
-    return { conflicts, active, idle }
+    return { active, idle }
   }, [sections, searchQuery])
 
   const searching = searchQuery.trim() !== ''
 
   const flatRows = useMemo<FlatRow[]>(() => {
     const rows: FlatRow[] = []
-    for (const c of filtered.conflicts) {
-      rows.push({ id: `conflict:${c.port}`, kind: 'conflict', projectName: c.primaryLabel })
-    }
     for (const p of filtered.active) {
       rows.push({ id: p.project.name, kind: 'project', projectName: p.project.name })
       if (searching || !collapsedActive.has(p.project.name)) {
@@ -224,10 +218,22 @@ export function TrayDropdown(): React.JSX.Element {
     if (selectedId && !flatRows.some((r) => r.id === selectedId)) setSelectedId(null)
   }, [flatRows, selectedId])
 
+  // Auto-resize the BrowserWindow to fit the rendered content height.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const observer = new ResizeObserver(() => {
+      window.api.resizeWindow(el.getBoundingClientRect().height)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
+
   const empty = Object.keys(state.projects).length === 0
 
   return (
     <div
+      ref={containerRef}
       onKeyDown={onKeyDown}
       tabIndex={-1}
       className="w-[420px] max-h-[560px] flex flex-col bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-2xl shadow-black/50 overflow-hidden outline-none"
@@ -239,7 +245,7 @@ export function TrayDropdown(): React.JSX.Element {
         </button>
       </div>
 
-      <KpiStrip running={runningCount} conflicts={state.conflicts.length} />
+      <KpiStrip running={runningCount} />
       <SearchBar ref={searchRef} value={searchQuery} onChange={setSearchQuery} onFocusChange={setIsSearchFocused} />
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700">
@@ -252,20 +258,6 @@ export function TrayDropdown(): React.JSX.Element {
           </div>
         ) : (
           <>
-            <ConflictsSection
-              conflicts={filtered.conflicts}
-              selectedId={selectedId}
-              onKillPort={(port) => ctx.killPort(port)}
-              onShowMenu={(c) =>
-                ctx.showContextMenu('conflict-service', {
-                  projectName: c.primaryLabel,
-                  componentName: c.claimants[0]?.split('/')[1],
-                  port: c.port,
-                  pid: c.activePid
-                })
-              }
-              onHover={setSelectedId}
-            />
             <ActiveProjectsSection
               projects={filtered.active}
               selectedId={selectedId}

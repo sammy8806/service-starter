@@ -65,11 +65,11 @@ describe('sortServices', () => {
     expect(group.components.map((c) => c.component.name)).toEqual(['frontend', 'docs', 'mobile'])
   })
 
-  it('treats a project with a conflicting (not running) component as active', () => {
+  it('places a conflicting (not running) project in idle', () => {
     const p = project('zeta', [comp('api', { ports: [port({ status: 'conflict' })] })])
     const result = sortServices(appState([p]), [])
-    expect(result.active.map((p) => p.project.name)).toEqual(['zeta'])
-    expect(result.idle).toHaveLength(0)
+    expect(result.idle.map((p) => p.project.name)).toEqual(['zeta'])
+    expect(result.active).toHaveLength(0)
   })
 
   it('sorts favorites to the top of idle, then alphabetical', () => {

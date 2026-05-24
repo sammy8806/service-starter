@@ -44,7 +44,7 @@ export function ProjectGroup({
   return (
     <div className="border-b border-white/[0.06] last:border-b-0">
       <div
-        className={`group flex items-center gap-2 px-3 py-2 transition-colors ${
+        className={`group flex items-center gap-2 px-3 py-1.5 transition-colors ${
           headerSelected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
         }`}
       >

@@ -4,6 +4,13 @@ import userEvent from '@testing-library/user-event'
 import { AppProvider, AppStateView } from '../../context/AppContext'
 import { TrayDropdown } from './TrayDropdown'
 
+// jsdom doesn't implement ResizeObserver
+global.ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 function buildState(): AppStateView {
   return {
     trayIcon: 'green',

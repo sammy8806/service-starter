@@ -42,7 +42,7 @@ export function ComponentRow({
   return (
     <div
       onMouseMove={onHover}
-      className={`group flex items-center gap-2 px-3 py-2 border-l transition-colors ${accent} ${
+      className={`group flex items-center gap-2 px-3 py-1 border-l transition-colors ${accent} ${
         selected ? 'bg-white/[0.06]' : 'hover:bg-white/[0.04]'
       }`}
     >

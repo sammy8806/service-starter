@@ -1,4 +1,4 @@
-import { app, BrowserWindow, clipboard, dialog } from 'electron'
+import { app, BrowserWindow, clipboard, dialog, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -190,6 +190,9 @@ app.whenReady().then(() => {
   // Create tray
   trayWindow = new TrayWindow()
   trayWindow.create()
+
+  ipcMain.on('window:close', () => trayWindow.hide())
+  ipcMain.on('window:resize', (_event, height: number) => trayWindow.resize(height))
 
   trayManager = new TrayManager({
     onLeftClick: () => {

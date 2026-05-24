@@ -27,6 +27,7 @@ export interface ServiceStarterAPI {
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
   closeWindow: () => void
+  resizeWindow: (height: number) => void
   startComponent: (projectName: string, componentName: string) => Promise<{ pid: number; logFile: string }>
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
   startProject: (projectName: string) => Promise<boolean>

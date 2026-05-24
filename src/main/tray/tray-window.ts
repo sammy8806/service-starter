@@ -93,6 +93,12 @@ export class TrayWindow {
     }
   }
 
+  resize(height: number): void {
+    if (!this.window || this.window.isDestroyed()) return
+    const capped = Math.max(80, Math.min(Math.ceil(height), 560))
+    this.window.setContentSize(WINDOW_WIDTH, capped, false)
+  }
+
   isVisible(): boolean {
     return this.window?.isVisible() ?? false
   }
