@@ -240,8 +240,8 @@ export function TrayDropdown(): React.JSX.Element {
       tabIndex={-1}
       className="w-[420px] max-h-[680px] flex flex-col bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-white/[0.08] shadow-2xl shadow-black/50 overflow-hidden outline-none"
     >
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-white/[0.06]">
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-400">Services</span>
+      <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/[0.06]">
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">Services</span>
         <button onClick={ctx.openDashboard} className="text-[11px] text-zinc-400 hover:text-zinc-200 transition-colors">
           Dashboard &rarr;
         </button>
