@@ -20,6 +20,12 @@ interface HandlerDependencies {
   stopLogTail: (projectName: string, componentName: string) => void
   getFavorites: () => string[]
   toggleFavorite: (projectName: string) => string[]
+  restartComponent: (projectName: string, componentName: string) => Promise<void>
+  stopAllManaged: () => Promise<void>
+  copyToClipboard: (text: string) => void
+  editManifest: (projectDir: string) => void
+  showProcessInfo: (pid: number) => void
+  tailLogs: (projectName: string, componentName: string) => void
 }
 
 /**
@@ -102,6 +108,32 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
 
   ipcMain.on(IPC_CHANNELS.LOG_STOP_TAIL, (_event, projectName: string, componentName: string) => {
     deps.stopLogTail(projectName, componentName)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.RESTART_COMPONENT, async (_event, projectName: string, componentName: string) => {
+    await deps.restartComponent(projectName, componentName)
+    return true
+  })
+
+  ipcMain.handle(IPC_CHANNELS.STOP_ALL_MANAGED, async () => {
+    await deps.stopAllManaged()
+    return true
+  })
+
+  ipcMain.on(IPC_CHANNELS.COPY_TO_CLIPBOARD, (_event, text: string) => {
+    deps.copyToClipboard(text)
+  })
+
+  ipcMain.on(IPC_CHANNELS.EDIT_MANIFEST, (_event, projectDir: string) => {
+    deps.editManifest(projectDir)
+  })
+
+  ipcMain.on(IPC_CHANNELS.SHOW_PROCESS_INFO, (_event, pid: number) => {
+    void deps.showProcessInfo(pid)
+  })
+
+  ipcMain.on(IPC_CHANNELS.TAIL_LOGS, (_event, projectName: string, componentName: string) => {
+    deps.tailLogs(projectName, componentName)
   })
 }
 

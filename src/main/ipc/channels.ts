@@ -38,7 +38,15 @@ export const IPC_CHANNELS = {
 
   // Favorites
   FAVORITES_GET: 'favorites:get',
-  FAVORITES_TOGGLE: 'favorites:toggle'
+  FAVORITES_TOGGLE: 'favorites:toggle',
+
+  // Service actions (context menu + buttons)
+  RESTART_COMPONENT: 'process:restart-component',
+  STOP_ALL_MANAGED: 'process:stop-all-managed',
+  COPY_TO_CLIPBOARD: 'action:copy',
+  EDIT_MANIFEST: 'action:edit-manifest',
+  SHOW_PROCESS_INFO: 'action:show-process-info',
+  TAIL_LOGS: 'log:tail-open'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

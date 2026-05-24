@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, clipboard, dialog } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
@@ -11,7 +11,7 @@ import { HealthAggregator } from './dependencies/health-aggregator'
 import { TrayManager } from './tray/tray-manager'
 import { TrayWindow } from './tray/tray-window'
 import { registerIpcHandlers, pushStateToRenderers, pushLogDataToRenderers } from './ipc/handlers'
-import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort } from './tray/quick-actions'
+import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort, getProcessInfo, openManifest } from './tray/quick-actions'
 import { ProcessManager } from './process/process-manager'
 import { LogStreamer } from './process/log-streamer'
 import { deriveComponentRuntimeState } from '../shared/component-runtime'
@@ -202,6 +202,30 @@ app.whenReady().then(() => {
   })
   trayManager.create()
 
+  // ── Helper: start a component by name ─────────────────────────────
+  async function startComponentByName(
+    projectName: string,
+    componentName: string
+  ): Promise<{ pid: number; logFile: string }> {
+    for (const [dir, project] of projectRegistry.getProjects()) {
+      if (project.name === projectName) {
+        const comp = project.components[componentName]
+        if (comp && comp.startCommand) {
+          return processManager.startComponent({
+            projectName,
+            componentName,
+            startCommand: comp.startCommand,
+            workDir: comp.workDir ? join(dir, comp.workDir) : dir,
+            projectDir: dir,
+            declaredPorts: comp.ports.map((port) => port.port),
+            env: comp.env
+          })
+        }
+      }
+    }
+    throw new Error(`Component ${projectName}/${componentName} not found or has no startCommand`)
+  }
+
   // Register IPC handlers
   registerIpcHandlers({
     getState: buildAppState,
@@ -217,26 +241,8 @@ app.whenReady().then(() => {
     openGitGui: (dir: string) => openInGitGui(dir, centralConfig.gitGui),
     killPort: killProcessOnPort,
     openDashboard: createDashboardWindow,
-    startComponent: async (projectName: string, componentName: string) => {
-      // Find the project and component config
-      for (const [dir, project] of projectRegistry.getProjects()) {
-        if (project.name === projectName) {
-          const comp = project.components[componentName]
-          if (comp && comp.startCommand) {
-            return processManager.startComponent({
-              projectName,
-              componentName,
-              startCommand: comp.startCommand,
-              workDir: comp.workDir ? join(dir, comp.workDir) : dir,
-              projectDir: dir,
-              declaredPorts: comp.ports.map((port) => port.port),
-              env: comp.env
-            })
-          }
-        }
-      }
-      throw new Error(`Component ${projectName}/${componentName} not found or has no startCommand`)
-    },
+    startComponent: (projectName: string, componentName: string) =>
+      startComponentByName(projectName, componentName),
     stopComponent: (projectName: string, componentName: string) =>
       processManager.stopComponent(projectName, componentName),
     startProject: async (projectName: string) => {
@@ -294,6 +300,40 @@ app.whenReady().then(() => {
       saveFavorites(favoritesPath(), favorites)
       pushState()
       return favorites
+    },
+    restartComponent: async (projectName: string, componentName: string) => {
+      await processManager.stopComponent(projectName, componentName)
+      await startComponentByName(projectName, componentName)
+    },
+    stopAllManaged: async () => {
+      const choice = dialog.showMessageBoxSync({
+        type: 'warning',
+        buttons: ['Stop all', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1,
+        message: 'Stop all managed services?',
+        detail: 'This stops every service that Service Starter started.'
+      })
+      if (choice !== 0) return
+      const managed = processManager.getManagedProcesses()
+      await Promise.all(
+        [...managed.values()].map((p) => processManager.stopComponent(p.projectName, p.componentName))
+      )
+    },
+    copyToClipboard: (text: string) => clipboard.writeText(text),
+    editManifest: (projectDir: string) =>
+      openManifest(projectDir, centralConfig.editor, centralConfig.editors),
+    showProcessInfo: async (pid: number) => {
+      const info = await getProcessInfo(pid)
+      dialog.showMessageBox({
+        type: 'info',
+        message: `Process ${pid}`,
+        detail: info ?? 'Process not found (it may have exited).'
+      })
+    },
+    tailLogs: (_projectName: string, _componentName: string) => {
+      // v1: open the dashboard. Deep-linking to the component's Logs tab is a follow-up.
+      createDashboardWindow()
     }
   })
 

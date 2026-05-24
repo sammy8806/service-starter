@@ -1,5 +1,6 @@
 import { execFile } from 'child_process'
 import { existsSync } from 'fs'
+import { join } from 'path'
 import { EditorConfig } from '../config/types'
 import { resolveEditor } from '../config/central-config'
 
@@ -127,6 +128,32 @@ export function openInGitGui(dir: string, gitGui: string = 'fork'): void {
       execFile('open', ['-a', gitGui, dir])
       break
   }
+}
+
+/**
+ * Returns a one-line human description of a PID via `ps`, or null if not found.
+ * Format: "node — started Mon May 19 09:14:00 2026".
+ */
+export async function getProcessInfo(pid: number): Promise<string | null> {
+  return new Promise((resolve) => {
+    execFile('ps', ['-p', String(pid), '-o', 'comm=,lstart='], (error, stdout) => {
+      const line = stdout?.trim()
+      if (error || !line) {
+        resolve(null)
+        return
+      }
+      resolve(line.replace(/\s{2,}/, ' — started '))
+    })
+  })
+}
+
+/** Opens a project's `.service-starter.yml` in the configured editor. */
+export function openManifest(
+  projectDir: string,
+  editorKey: string = 'code',
+  userEditors?: Record<string, EditorConfig>
+): void {
+  openInEditor(join(projectDir, '.service-starter.yml'), editorKey, userEditors)
 }
 
 /**

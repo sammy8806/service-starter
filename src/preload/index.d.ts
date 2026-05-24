@@ -22,6 +22,12 @@ export interface ServiceStarterAPI {
   onStateUpdate: (callback: (state: unknown) => void) => () => void
   getFavorites: () => Promise<string[]>
   toggleFavorite: (projectName: string) => Promise<string[]>
+  restartComponent: (projectName: string, componentName: string) => Promise<boolean>
+  stopAllManaged: () => Promise<boolean>
+  copyToClipboard: (text: string) => void
+  editManifest: (projectDir: string) => void
+  showProcessInfo: (pid: number) => void
+  tailLogs: (projectName: string, componentName: string) => void
 }
 
 declare global {

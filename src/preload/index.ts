@@ -47,6 +47,16 @@ const api = {
   getFavorites: () => ipcRenderer.invoke('favorites:get'),
   toggleFavorite: (projectName: string) => ipcRenderer.invoke('favorites:toggle', projectName),
 
+  // Service actions
+  restartComponent: (projectName: string, componentName: string) =>
+    ipcRenderer.invoke('process:restart-component', projectName, componentName),
+  stopAllManaged: () => ipcRenderer.invoke('process:stop-all-managed'),
+  copyToClipboard: (text: string) => ipcRenderer.send('action:copy', text),
+  editManifest: (projectDir: string) => ipcRenderer.send('action:edit-manifest', projectDir),
+  showProcessInfo: (pid: number) => ipcRenderer.send('action:show-process-info', pid),
+  tailLogs: (projectName: string, componentName: string) =>
+    ipcRenderer.send('log:tail-open', projectName, componentName),
+
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => callback(state)
