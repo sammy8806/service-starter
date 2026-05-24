@@ -3,8 +3,6 @@ import { useAppState } from '../../context/AppContext'
 import { isPortBound } from '../../../../shared/port-state'
 import { sortServices, ProjectRow } from '../../utils/sortServices'
 import { searchMatcher } from '../../utils/searchMatcher'
-import { KpiStrip } from './KpiStrip'
-import { SearchBar } from './SearchBar'
 import { ActiveProjectsSection } from './ActiveProjectsSection'
 import { IdleProjectsSection } from './IdleProjectsSection'
 import { FooterActions } from './FooterActions'
@@ -249,8 +247,31 @@ export function TrayDropdown(): React.JSX.Element {
         </button>
       </div>
 
-      <KpiStrip running={runningCount} />
-      <SearchBar ref={searchRef} value={searchQuery} onChange={setSearchQuery} onFocusChange={setIsSearchFocused} />
+      {/* Combined stats + search — single thin row */}
+      <div className="flex items-center gap-3 px-3 border-b border-white/[0.06]" style={{ minHeight: 0 }}>
+        <span className="flex items-center gap-1.5 text-[11px] text-zinc-500 flex-shrink-0 py-1.5">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span className="font-mono tabular-nums text-zinc-300">{runningCount}</span> running
+        </span>
+        <input
+          ref={searchRef}
+          value={searchQuery}
+          placeholder="Search…"
+          spellCheck={false}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setIsSearchFocused(false)}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && searchQuery.length > 0) {
+              e.preventDefault()
+              e.stopPropagation()
+              setSearchQuery('')
+            }
+          }}
+          className="flex-1 min-w-0 bg-transparent text-[11px] text-zinc-400 placeholder:text-zinc-700 outline-none py-1.5"
+        />
+        <kbd className="text-[9px] text-zinc-700 font-mono flex-shrink-0">⌘F</kbd>
+      </div>
 
       <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700">
         {empty ? (
