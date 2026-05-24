@@ -27,7 +27,8 @@ export function TrayDropdown(): React.JSX.Element {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [collapsedActive, setCollapsedActive] = useState<Set<string>>(new Set())
   const [expandedIdle, setExpandedIdle] = useState<Set<string>>(new Set())
-  const [now] = useState(() => Date.now())
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now()
 
   const sections = useMemo(() => sortServices(state, state.favorites), [state])
 
