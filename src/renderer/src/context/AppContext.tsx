@@ -73,6 +73,14 @@ interface AppContextType {
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
   startProject: (projectName: string) => Promise<unknown>
   stopProject: (projectName: string) => Promise<unknown>
+  toggleFavorite: (projectName: string) => Promise<string[]>
+  restartComponent: (projectName: string, componentName: string) => Promise<boolean>
+  copyToClipboard: (text: string) => void
+  editManifest: (projectDir: string) => void
+  showProcessInfo: (pid: number) => void
+  stopAllManaged: () => Promise<boolean>
+  tailLogs: (projectName: string, componentName: string) => void
+  showContextMenu: (type: string, payload: unknown) => void
 }
 
 const AppContext = createContext<AppContextType>({
@@ -85,7 +93,15 @@ const AppContext = createContext<AppContextType>({
   startComponent: async () => {},
   stopComponent: async () => false,
   startProject: async () => {},
-  stopProject: async () => {}
+  stopProject: async () => {},
+  toggleFavorite: async () => [],
+  restartComponent: async () => false,
+  copyToClipboard: () => {},
+  editManifest: () => {},
+  showProcessInfo: () => {},
+  stopAllManaged: async () => false,
+  tailLogs: () => {},
+  showContextMenu: () => {}
 })
 
 export function AppProvider({ children }: { children: ReactNode }): React.JSX.Element {
@@ -111,7 +127,17 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     startComponent: (projectName, componentName) => window.api.startComponent(projectName, componentName),
     stopComponent: (projectName, componentName) => window.api.stopComponent(projectName, componentName),
     startProject: (projectName) => window.api.startProject(projectName),
-    stopProject: (projectName) => window.api.stopProject(projectName)
+    stopProject: (projectName) => window.api.stopProject(projectName),
+    toggleFavorite: (projectName) => window.api.toggleFavorite(projectName),
+    restartComponent: (projectName, componentName) =>
+      window.api.restartComponent(projectName, componentName),
+    copyToClipboard: (text) => window.api.copyToClipboard(text),
+    editManifest: (projectDir) => window.api.editManifest(projectDir),
+    showProcessInfo: (pid) => window.api.showProcessInfo(pid),
+    stopAllManaged: () => window.api.stopAllManaged(),
+    tailLogs: (projectName, componentName) => window.api.tailLogs(projectName, componentName),
+    showContextMenu: (type, payload) =>
+      window.api.showContextMenu(type as never, payload as never)
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>
