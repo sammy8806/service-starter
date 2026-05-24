@@ -71,8 +71,8 @@ interface AppContextType {
   openDashboard: () => void
   startComponent: (projectName: string, componentName: string) => Promise<unknown>
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
-  startProject: (projectName: string) => Promise<unknown>
-  stopProject: (projectName: string) => Promise<unknown>
+  startProject: (projectName: string) => Promise<boolean>
+  stopProject: (projectName: string) => Promise<boolean>
   toggleFavorite: (projectName: string) => Promise<string[]>
   restartComponent: (projectName: string, componentName: string) => Promise<boolean>
   copyToClipboard: (text: string) => void
@@ -137,7 +137,7 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     stopAllManaged: () => window.api.stopAllManaged(),
     tailLogs: (projectName, componentName) => window.api.tailLogs(projectName, componentName),
     showContextMenu: (type, payload) =>
-      window.api.showContextMenu(type as never, payload as never)
+      window.api.showContextMenu(type, payload)
   }
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

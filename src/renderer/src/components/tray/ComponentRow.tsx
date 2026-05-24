@@ -1,6 +1,6 @@
-import { StatusBadge } from './StatusBadge'
-import { ComponentStateView } from '../context/AppContext'
-import { findBoundPort, hasBoundPort } from '../../../shared/port-state'
+import { StatusBadge } from '../StatusBadge'
+import { ComponentStateView } from '../../context/AppContext'
+import { findBoundPort, hasBoundPort } from '../../../../shared/port-state'
 
 interface ComponentRowProps {
   component: ComponentStateView

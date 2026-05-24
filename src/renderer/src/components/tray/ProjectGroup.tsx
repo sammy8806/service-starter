@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ComponentRow } from './ComponentRow'
-import { ProjectStateView } from '../context/AppContext'
+import { ProjectStateView } from '../../context/AppContext'
 
 interface ProjectGroupProps {
   project: ProjectStateView

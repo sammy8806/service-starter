@@ -1,5 +1,5 @@
 import { useServiceState } from '../hooks/useServiceState'
-import { ProjectGroup } from './ProjectGroup'
+import { ProjectGroup } from './tray/ProjectGroup'
 import { PortSummary } from './PortSummary'
 import { isPortBound } from '../../../shared/port-state'
 
