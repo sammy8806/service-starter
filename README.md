@@ -2,7 +2,7 @@
 
 A system tray app that auto-discovers your dev projects and keeps an eye on ports and dependencies.
 
-<img src="docs/screenshot-tray-overview.png" width="380" alt="service-starter tray overview" />
+<center><img src="docs/screenshot-tray-overview.png" width="380" alt="service-starter tray overview" /></center>
 
 ---
 
