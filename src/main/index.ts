@@ -1,6 +1,24 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
+import { execFileSync } from 'child_process'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+
+// Packaged Electron apps on macOS don't inherit the user's shell PATH,
+// so tools like uv, docker, brew-installed binaries aren't found.
+// Spawn a login shell once at startup to read the real PATH.
+if (process.platform === 'darwin') {
+  try {
+    const shell = process.env.SHELL || '/bin/zsh'
+    const realPath = execFileSync(shell, ['-l', '-c', 'printenv PATH'], {
+      encoding: 'utf8',
+      timeout: 5000
+    }).trim()
+    if (realPath) process.env.PATH = realPath
+  } catch {
+    const extras = ['/opt/homebrew/bin', '/usr/local/bin', `${process.env.HOME}/.local/bin`]
+    process.env.PATH = [...extras, process.env.PATH ?? ''].filter(Boolean).join(':')
+  }
+}
 
 import { loadCentralConfig, saveCentralConfig } from './config/central-config'
 import { loadFavorites, saveFavorites, toggleFavorite as toggleFav, isFavorite } from './config/favorites'
