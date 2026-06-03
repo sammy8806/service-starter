@@ -46,6 +46,8 @@ export interface ServiceStarterAPI {
   showProcessInfo: (pid: number) => void
   tailLogs: (projectName: string, componentName: string) => void
   showContextMenu: (type: ContextMenuType, payload: ContextMenuPayload) => void
+  selectDirectory: () => Promise<string | null>
+  getComponentEnv: (projectName: string, componentName: string) => Promise<Record<string, string>>
 }
 
 declare global {

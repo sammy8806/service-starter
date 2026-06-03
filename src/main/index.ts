@@ -21,6 +21,7 @@ if (process.platform === 'darwin') {
 }
 
 import { loadCentralConfig, saveCentralConfig } from './config/central-config'
+import { resolveEnvVars } from './config/env-resolver'
 import { loadFavorites, saveFavorites, toggleFavorite as toggleFav, isFavorite } from './config/favorites'
 import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState } from './config/types'
 import { ProjectRegistry } from './discovery/project-registry'
@@ -359,6 +360,20 @@ app.whenReady().then(() => {
     tailLogs: (_projectName: string, _componentName: string) => {
       // v1: open the dashboard. Deep-linking to the component's Logs tab is a follow-up.
       createDashboardWindow()
+    },
+    selectDirectory: async () => {
+      const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
+      if (result.canceled || result.filePaths.length === 0) return null
+      return result.filePaths[0]
+    },
+    getComponentEnv: (projectName: string, componentName: string) => {
+      for (const [_dir, project] of projectRegistry.getProjects()) {
+        if (project.name === projectName) {
+          const env = project.components[componentName]?.env
+          return env ? resolveEnvVars(env).resolved : {}
+        }
+      }
+      return {}
     }
   })
 

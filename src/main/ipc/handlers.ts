@@ -26,6 +26,8 @@ interface HandlerDependencies {
   editManifest: (projectDir: string) => void
   showProcessInfo: (pid: number) => void
   tailLogs: (projectName: string, componentName: string) => void
+  selectDirectory: () => Promise<string | null>
+  getComponentEnv: (projectName: string, componentName: string) => Record<string, string>
 }
 
 /**
@@ -134,6 +136,14 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
 
   ipcMain.on(IPC_CHANNELS.TAIL_LOGS, (_event, projectName: string, componentName: string) => {
     deps.tailLogs(projectName, componentName)
+  })
+
+  ipcMain.handle(IPC_CHANNELS.DIALOG_SELECT_DIRECTORY, () => {
+    return deps.selectDirectory()
+  })
+
+  ipcMain.handle(IPC_CHANNELS.COMPONENT_GET_ENV, (_event, projectName: string, componentName: string) => {
+    return deps.getComponentEnv(projectName, componentName)
   })
 }
 

@@ -48,7 +48,11 @@ export const IPC_CHANNELS = {
   EDIT_MANIFEST: 'action:edit-manifest',
   SHOW_PROCESS_INFO: 'action:show-process-info',
   TAIL_LOGS: 'log:tail-open',
-  SHOW_CONTEXT_MENU: 'menu:show'
+  SHOW_CONTEXT_MENU: 'menu:show',
+
+  // Dashboard
+  DIALOG_SELECT_DIRECTORY: 'dialog:select-directory',
+  COMPONENT_GET_ENV: 'component:get-env'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

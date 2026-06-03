@@ -60,6 +60,11 @@ const api = {
   showContextMenu: (type: string, payload: unknown) =>
     ipcRenderer.send('menu:show', type, payload),
 
+  // Dashboard
+  selectDirectory: () => ipcRenderer.invoke('dialog:select-directory'),
+  getComponentEnv: (projectName: string, componentName: string) =>
+    ipcRenderer.invoke('component:get-env', projectName, componentName),
+
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {
     const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => callback(state)
