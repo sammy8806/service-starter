@@ -155,6 +155,9 @@ function createDashboardWindow(): void {
   dashboardWindow = new BrowserWindow({
     width: 900,
     height: 670,
+    minWidth: 720,
+    minHeight: 480,
+    resizable: true,
     show: false,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 12, y: 12 },
@@ -367,7 +370,7 @@ app.whenReady().then(() => {
       return result.filePaths[0]
     },
     getComponentEnv: (projectName: string, componentName: string) => {
-      for (const [_dir, project] of projectRegistry.getProjects()) {
+      for (const project of projectRegistry.getProjects().values()) {
         if (project.name === projectName) {
           const env = project.components[componentName]?.env
           return env ? resolveEnvVars(env).resolved : {}

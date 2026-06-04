@@ -42,7 +42,7 @@ export function ComponentDetail({
 
   const subtitle = [
     port ? `:${port}` : null,
-    component.startedAt ? formatUptime(component.startedAt, Date.now()) : null,
+    component.startedAt ? formatUptime(component.startedAt) : null,
     pid ? `pid ${pid}` : null,
     component.processOrigin
   ]
@@ -86,7 +86,11 @@ export function ComponentDetail({
       </div>
 
       {/* Tab bar */}
-      <nav role="tablist" aria-label="Component detail" className="flex gap-0 px-5 border-b border-white/[0.06]">
+      <nav
+        role="tablist"
+        aria-label="Component detail"
+        className="flex gap-0 px-5 border-b border-white/[0.06]"
+      >
         {TABS.map((t) => (
           <button
             key={t.id}
