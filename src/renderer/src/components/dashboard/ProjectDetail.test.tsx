@@ -42,4 +42,30 @@ describe('ProjectDetail', () => {
     fireEvent.click(screen.getByText('backend'))
     expect(onSelectComponent).toHaveBeenCalledWith('backend')
   })
+
+  it('renders aggregate port chips for components that declare ports', () => {
+    render(
+      <ProjectDetail project={project} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
+    )
+    expect(screen.getByText(/:8090 api/)).toBeInTheDocument()
+  })
+
+  it('renders the project-level dependency section with a health label', () => {
+    const withDep: ProjectStateView = {
+      ...project,
+      dependencies: [
+        {
+          dependency: { type: 'docker', container: 'postgres' },
+          health: 'unhealthy',
+          lastChecked: 0
+        }
+      ]
+    }
+    render(
+      <ProjectDetail project={withDep} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
+    )
+    expect(screen.getByText('Dependencies')).toBeInTheDocument()
+    expect(screen.getByText('postgres')).toBeInTheDocument()
+    expect(screen.getByText('unhealthy')).toBeInTheDocument()
+  })
 })

@@ -103,7 +103,17 @@ export function ProjectDetail({
                   <div key={`${name}-${i}`} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
                     <StatusBadge status={dep.health} size="md" />
                     <span className="text-zinc-300">{name}</span>
-                    <span className="ml-auto text-[12px] text-zinc-500">{dep.health}</span>
+                    <span
+                      className={`ml-auto text-[12px] font-medium ${
+                        dep.health === 'healthy'
+                          ? 'text-emerald-400'
+                          : dep.health === 'unhealthy'
+                            ? 'text-red-400'
+                            : 'text-zinc-500'
+                      }`}
+                    >
+                      {dep.health}
+                    </span>
                   </div>
                 )
               })}
