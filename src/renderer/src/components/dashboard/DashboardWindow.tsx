@@ -1,60 +1,100 @@
-import { useState } from 'react'
-import { ProjectsTab } from './ProjectsTab'
-import { PortMapTab } from './PortMapTab'
-import { DependenciesTab } from './DependenciesTab'
-import { SettingsTab } from './SettingsTab'
+import { useMemo, useState } from 'react'
+import { useAppState } from '../../context/AppContext'
+import { buildDashboardTree } from '../../utils/dashboardTree'
+import { ProjectTree, Selection } from './ProjectTree'
+import { OverviewDetail } from './OverviewDetail'
+import { ProjectDetail } from './ProjectDetail'
+import { ComponentDetail } from './ComponentDetail'
+import { SettingsView } from './SettingsView'
 
-type Tab = 'projects' | 'ports' | 'dependencies' | 'settings'
-
-const TABS: { id: Tab; label: string }[] = [
-  { id: 'projects', label: 'Projects' },
-  { id: 'ports', label: 'Port Map' },
-  { id: 'dependencies', label: 'Dependencies' },
-  { id: 'settings', label: 'Settings' }
-]
+type View = 'projects' | 'settings'
 
 export function DashboardWindow(): React.JSX.Element {
-  const [activeTab, setActiveTab] = useState<Tab>('projects')
+  const ctx = useAppState()
+  const { state } = ctx
+  const [view, setView] = useState<View>('projects')
+  const [selection, setSelection] = useState<Selection>({ kind: 'overview' })
+
+  const tree = useMemo(() => buildDashboardTree(state), [state])
+
+  const selectedProject =
+    selection.kind === 'project' || selection.kind === 'component'
+      ? state.projects[selection.projectName]
+      : undefined
+  const selectedComponent =
+    selection.kind === 'component'
+      ? selectedProject?.components[selection.componentName]
+      : undefined
 
   return (
     <div className="h-screen flex flex-col bg-zinc-900 text-zinc-100">
       {/* Title bar / drag region */}
       <div
-        className="flex items-center justify-between pl-20 pr-5 pt-3 pb-0"
+        className="flex items-center gap-4 pl-20 pr-5 pt-3 pb-2"
         style={{ WebkitAppRegion: 'drag' } as React.CSSProperties}
       >
-        <h1 className="text-base font-semibold tracking-tight text-zinc-200">
-          Service Starter
-        </h1>
+        <h1 className="text-[13px] font-semibold tracking-tight text-zinc-300">Service Starter</h1>
+        <nav className="flex gap-1" style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}>
+          {(['projects', 'settings'] as View[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`px-3 py-1 text-[13px] font-medium rounded-md transition-colors ${
+                view === v ? 'bg-white/[0.08] text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              {v === 'projects' ? 'Projects' : 'Settings'}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {/* Tab bar */}
-      <nav className="flex gap-0 px-5 mt-3 border-b border-white/[0.06]">
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`px-3 py-2 text-[13px] font-medium transition-colors relative ${
-              activeTab === tab.id
-                ? 'text-zinc-100'
-                : 'text-zinc-500 hover:text-zinc-300'
-            }`}
-            style={{ WebkitAppRegion: 'no-drag' } as React.CSSProperties}
-          >
-            {tab.label}
-            {activeTab === tab.id && (
-              <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-zinc-100 rounded-full" />
-            )}
-          </button>
-        ))}
-      </nav>
-
-      {/* Tab content */}
-      <div className="flex-1 overflow-y-auto">
-        {activeTab === 'projects' && <ProjectsTab />}
-        {activeTab === 'ports' && <PortMapTab />}
-        {activeTab === 'dependencies' && <DependenciesTab />}
-        {activeTab === 'settings' && <SettingsTab />}
+      {/* Body */}
+      <div className="flex-1 flex min-h-0 border-t border-white/[0.06]">
+        {view === 'settings' ? (
+          <SettingsView />
+        ) : (
+          <>
+            <ProjectTree tree={tree} selection={selection} onSelect={setSelection} />
+            <div className="flex-1 flex flex-col min-h-0">
+              {selection.kind === 'component' && selectedProject && selectedComponent ? (
+                <ComponentDetail
+                  projectName={selection.projectName}
+                  directory={selectedProject.directory}
+                  component={selectedComponent}
+                  onStart={(p, c) => {
+                    void ctx.startComponent(p, c)
+                  }}
+                  onStop={(p, c) => {
+                    void ctx.stopComponent(p, c)
+                  }}
+                  onRestart={(p, c) => {
+                    void ctx.restartComponent(p, c)
+                  }}
+                />
+              ) : selection.kind === 'project' && selectedProject ? (
+                <ProjectDetail
+                  project={selectedProject}
+                  onStartProject={(p) => {
+                    void ctx.startProject(p)
+                  }}
+                  onStopProject={(p) => {
+                    void ctx.stopProject(p)
+                  }}
+                  onSelectComponent={(componentName) =>
+                    setSelection({
+                      kind: 'component',
+                      projectName: selectedProject.name,
+                      componentName
+                    })
+                  }
+                />
+              ) : (
+                <OverviewDetail state={state} />
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
