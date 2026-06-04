@@ -38,6 +38,16 @@ export function ComponentDetail({
   const port = component.ports[0]?.port
   const isManaged = component.processOrigin === 'managed'
   const isRunning = component.status === 'running'
+  const isStartable = component.processOrigin === 'none'
+
+  const subtitle = [
+    port ? `:${port}` : null,
+    component.startedAt ? formatUptime(component.startedAt, Date.now()) : null,
+    pid ? `pid ${pid}` : null,
+    component.processOrigin
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <div className="flex flex-1 flex-col min-h-0">
@@ -46,12 +56,7 @@ export function ComponentDetail({
         <StatusBadge status={component.status} size="md" />
         <div className="min-w-0">
           <div className="text-[15px] font-semibold text-zinc-100">{component.name}</div>
-          <div className="text-[11px] font-mono text-zinc-500 mt-0.5">
-            {port ? `:${port}` : ''}
-            {component.startedAt ? ` · ${formatUptime(component.startedAt, Date.now())}` : ''}
-            {pid ? ` · pid ${pid}` : ''}
-            {` · ${component.processOrigin}`}
-          </div>
+          <div className="text-[11px] font-mono text-zinc-500 mt-0.5">{subtitle}</div>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {isManaged && isRunning && (
@@ -69,7 +74,7 @@ export function ComponentDetail({
             >
               Stop
             </button>
-          ) : component.processOrigin === 'none' ? (
+          ) : isStartable ? (
             <button
               onClick={() => onStart(projectName, component.name)}
               className="px-3 py-1.5 text-[12px] text-emerald-400/80 hover:text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
@@ -81,10 +86,12 @@ export function ComponentDetail({
       </div>
 
       {/* Tab bar */}
-      <nav className="flex gap-0 px-5 border-b border-white/[0.06]">
+      <nav role="tablist" aria-label="Component detail" className="flex gap-0 px-5 border-b border-white/[0.06]">
         {TABS.map((t) => (
           <button
             key={t.id}
+            role="tab"
+            aria-selected={tab === t.id}
             onClick={() => setTab(t.id)}
             className={`px-3 py-2 text-[13px] font-medium transition-colors relative ${
               tab === t.id ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300'

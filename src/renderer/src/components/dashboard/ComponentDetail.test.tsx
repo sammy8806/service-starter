@@ -49,7 +49,7 @@ describe('ComponentDetail', () => {
         onRestart={vi.fn()}
       />
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Ports' }))
+    fireEvent.click(screen.getByRole('tab', { name: 'Ports' }))
     expect(screen.getByText('api')).toBeInTheDocument()
   })
 })
