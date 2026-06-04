@@ -7,7 +7,8 @@ beforeEach(() => {
     getLog: vi.fn().mockResolvedValue('line one\nline two\n'),
     startLogTail: vi.fn(),
     stopLogTail: vi.fn(),
-    onLogData: vi.fn().mockReturnValue(() => {})
+    onLogData: vi.fn().mockReturnValue(() => {}),
+    copyToClipboard: vi.fn()
   }
 })
 
@@ -41,9 +42,11 @@ describe('LogsTab', () => {
     await waitFor(() => expect(window.api.startLogTail).toHaveBeenCalled())
     act(() => {
       cb({ logFile: '/projects/blog/.service-starter/logs/web.log', content: 'OTHER\n' })
+      cb({ logFile: '/projects/shop-extra/.service-starter/logs/web.log', content: 'PREFIX\n' })
       cb({ logFile: '/projects/shop/.service-starter/logs/web.log', content: 'MINE\n' })
     })
     await waitFor(() => expect(screen.getByText(/MINE/)).toBeInTheDocument())
     expect(screen.queryByText(/OTHER/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/PREFIX/)).not.toBeInTheDocument()
   })
 })

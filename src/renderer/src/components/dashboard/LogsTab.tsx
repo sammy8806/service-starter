@@ -29,7 +29,10 @@ export function LogsTab({
     const unsubscribe = window.api.onLogData((data) => {
       // onLogData fires for all tailed files — scope to this project's component.
       // Component names aren't unique across projects, so match the project directory too.
-      if (!data.logFile.includes(directory) || !data.logFile.endsWith(`/${componentName}.log`)) return
+      // Use a path-segment boundary (directory + '/') to avoid prefix collisions
+      // (e.g. '/projects/shop' must not match '/projects/shop-staging').
+      if (!data.logFile.startsWith(`${directory}/`) || !data.logFile.endsWith(`/${componentName}.log`))
+        return
       setContent((prev) => prev + data.content)
     })
     return () => {
@@ -66,7 +69,7 @@ export function LogsTab({
     <div className="flex flex-1 flex-col bg-zinc-950 min-h-0">
       <div className="flex items-center justify-end gap-3 px-4 py-1.5 border-b border-white/[0.06]">
         <button
-          onClick={() => navigator.clipboard.writeText(content)}
+          onClick={() => window.api.copyToClipboard(content)}
           className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
         >
           Copy
