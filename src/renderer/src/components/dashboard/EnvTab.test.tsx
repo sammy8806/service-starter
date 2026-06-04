@@ -9,6 +9,11 @@ beforeEach(() => {
 })
 
 describe('EnvTab', () => {
+  it('shows a loading state before the env vars resolve', () => {
+    render(<EnvTab projectName="p" componentName="c" />)
+    expect(screen.getByText(/loading/i)).toBeInTheDocument()
+  })
+
   it('loads and renders resolved env vars', async () => {
     render(<EnvTab projectName="p" componentName="c" />)
     await waitFor(() => expect(screen.getByText('NODE_ENV')).toBeInTheDocument())

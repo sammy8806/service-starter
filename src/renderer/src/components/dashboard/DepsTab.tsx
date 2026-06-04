@@ -13,13 +13,7 @@ export function DepsTab({ component }: { component: ComponentStateView }): React
           return (
             <div key={`${name}-${i}`} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
               <StatusBadge
-                status={
-                  dep.health === 'healthy'
-                    ? 'healthy'
-                    : dep.health === 'unhealthy'
-                      ? 'unhealthy'
-                      : 'unknown'
-                }
+                status={dep.health}
                 size="md"
               />
               <span className="text-zinc-300 font-medium">{name}</span>
