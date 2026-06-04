@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface SettingsForm {
   scanDirectories: string[]
@@ -39,6 +39,7 @@ export function SettingsView(): React.JSX.Element {
   // Hold the full loaded config so keys this form doesn't manage (e.g. `editors`,
   // `overrides`) are preserved on save instead of being silently dropped.
   const [rawConfig, setRawConfig] = useState<Record<string, unknown>>({})
+  const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     window.api.getConfig().then((config) => {
@@ -49,13 +50,20 @@ export function SettingsView(): React.JSX.Element {
     })
   }, [])
 
+  useEffect(() => {
+    return () => {
+      if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current)
+    }
+  }, [])
+
   const dirty = saved !== null && JSON.stringify(settings) !== JSON.stringify(saved)
 
   const handleSave = async (): Promise<void> => {
     await window.api.saveConfig({ ...rawConfig, ...settings })
     setSaved(settings)
     setSavedFlash(true)
-    setTimeout(() => setSavedFlash(false), 2000)
+    if (savedFlashTimer.current) clearTimeout(savedFlashTimer.current)
+    savedFlashTimer.current = setTimeout(() => setSavedFlash(false), 2000)
   }
 
   const addDirectory = async (): Promise<void> => {
@@ -114,28 +122,37 @@ export function SettingsView(): React.JSX.Element {
         <h3 className="text-[13px] font-medium text-zinc-200 mb-3">Scan Intervals</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-[12px] text-zinc-500 block mb-1">Project scan (ms)</label>
+            <label htmlFor="setting-scan-interval" className="text-[12px] text-zinc-500 block mb-1">
+              Project scan (ms)
+            </label>
             <input
+              id="setting-scan-interval"
               type="number"
               value={settings.scanIntervalMs}
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  scanIntervalMs: parseInt(e.target.value) || DEFAULTS.scanIntervalMs
+                  scanIntervalMs: parseInt(e.target.value, 10) || DEFAULTS.scanIntervalMs
                 })
               }
               className={SELECT_CLASS + ' font-mono'}
             />
           </div>
           <div>
-            <label className="text-[12px] text-zinc-500 block mb-1">Port scan (ms)</label>
+            <label
+              htmlFor="setting-port-scan-interval"
+              className="text-[12px] text-zinc-500 block mb-1"
+            >
+              Port scan (ms)
+            </label>
             <input
+              id="setting-port-scan-interval"
               type="number"
               value={settings.portScanIntervalMs}
               onChange={(e) =>
                 setSettings({
                   ...settings,
-                  portScanIntervalMs: parseInt(e.target.value) || DEFAULTS.portScanIntervalMs
+                  portScanIntervalMs: parseInt(e.target.value, 10) || DEFAULTS.portScanIntervalMs
                 })
               }
               className={SELECT_CLASS + ' font-mono'}
@@ -148,8 +165,11 @@ export function SettingsView(): React.JSX.Element {
         <h3 className="text-[13px] font-medium text-zinc-200 mb-3">Applications</h3>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="text-[12px] text-zinc-500 block mb-1">Editor</label>
+            <label htmlFor="setting-editor" className="text-[12px] text-zinc-500 block mb-1">
+              Editor
+            </label>
             <select
+              id="setting-editor"
               value={settings.editor}
               onChange={(e) => setSettings({ ...settings, editor: e.target.value })}
               className={SELECT_CLASS}
@@ -163,8 +183,11 @@ export function SettingsView(): React.JSX.Element {
             </select>
           </div>
           <div>
-            <label className="text-[12px] text-zinc-500 block mb-1">Terminal</label>
+            <label htmlFor="setting-terminal" className="text-[12px] text-zinc-500 block mb-1">
+              Terminal
+            </label>
             <select
+              id="setting-terminal"
               value={settings.terminal}
               onChange={(e) => setSettings({ ...settings, terminal: e.target.value })}
               className={SELECT_CLASS}
@@ -177,8 +200,11 @@ export function SettingsView(): React.JSX.Element {
             </select>
           </div>
           <div>
-            <label className="text-[12px] text-zinc-500 block mb-1">Git GUI</label>
+            <label htmlFor="setting-git-gui" className="text-[12px] text-zinc-500 block mb-1">
+              Git GUI
+            </label>
             <select
+              id="setting-git-gui"
               value={settings.gitGui}
               onChange={(e) => setSettings({ ...settings, gitGui: e.target.value })}
               className={SELECT_CLASS}
@@ -198,7 +224,9 @@ export function SettingsView(): React.JSX.Element {
           onClick={handleSave}
           disabled={!dirty}
           className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
-            dirty ? 'bg-zinc-100 text-zinc-900 hover:bg-white' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+            dirty
+              ? 'bg-zinc-100 text-zinc-900 hover:bg-white'
+              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
           }`}
         >
           Save Settings
