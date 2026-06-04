@@ -36,19 +36,23 @@ export function SettingsView(): React.JSX.Element {
   const [settings, setSettings] = useState<SettingsForm>(DEFAULTS)
   const [saved, setSaved] = useState<SettingsForm | null>(null)
   const [savedFlash, setSavedFlash] = useState(false)
+  // Hold the full loaded config so keys this form doesn't manage (e.g. `editors`,
+  // `overrides`) are preserved on save instead of being silently dropped.
+  const [rawConfig, setRawConfig] = useState<Record<string, unknown>>({})
 
   useEffect(() => {
     window.api.getConfig().then((config) => {
       const normalized = normalize(config as Partial<SettingsForm>)
       setSettings(normalized)
       setSaved(normalized)
+      setRawConfig((config as Record<string, unknown>) ?? {})
     })
   }, [])
 
   const dirty = saved !== null && JSON.stringify(settings) !== JSON.stringify(saved)
 
   const handleSave = async (): Promise<void> => {
-    await window.api.saveConfig(settings)
+    await window.api.saveConfig({ ...rawConfig, ...settings })
     setSaved(settings)
     setSavedFlash(true)
     setTimeout(() => setSavedFlash(false), 2000)
