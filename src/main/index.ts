@@ -167,12 +167,24 @@ function createDashboardWindow(): void {
     }
   })
 
+  // Show the dock icon while a real window is open so it appears in the Dock
+  // and ⌘-Tab switcher. app.dock.hide() puts the app in macOS "accessory" mode,
+  // which excludes windows from both — so we temporarily switch back to regular.
+  if (process.platform === 'darwin') {
+    app.dock?.show()
+  }
+
   dashboardWindow.on('ready-to-show', () => {
     dashboardWindow!.show()
+    dashboardWindow!.focus()
   })
 
   dashboardWindow.on('closed', () => {
     dashboardWindow = null
+    // Return to tray-only mode (no dock icon) now that no window is open.
+    if (process.platform === 'darwin') {
+      app.dock?.hide()
+    }
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
