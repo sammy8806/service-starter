@@ -25,6 +25,14 @@ describe('LogsTab', () => {
     expect(window.api.startLogTail).toHaveBeenCalledWith('p', 'c')
   })
 
+  it('loads previous log content for stopped managed components without tailing', async () => {
+    render(<LogsTab projectName="p" componentName="c" processOrigin="none" directory="/p" />)
+    await waitFor(() => expect(screen.getByText(/line one/)).toBeInTheDocument())
+    expect(window.api.getLog).toHaveBeenCalledWith('p', 'c')
+    expect(window.api.startLogTail).not.toHaveBeenCalled()
+    expect(window.api.onLogData).not.toHaveBeenCalled()
+  })
+
   it('only appends log data for its own component+directory', async () => {
     let cb: (d: { logFile: string; content: string }) => void = () => {}
     ;(window.api.onLogData as ReturnType<typeof vi.fn>).mockImplementation((fn) => {

@@ -17,30 +17,40 @@ export function LogsTab({
   const [content, setContent] = useState('')
   const containerRef = useRef<HTMLPreElement>(null)
   const autoScrollRef = useRef(true)
-  const hasLogs = processOrigin === 'managed'
+  const canReadServiceLog = processOrigin !== 'external'
+  const shouldTailLog = processOrigin === 'managed'
 
   useEffect(() => {
-    if (!hasLogs) return
+    if (!canReadServiceLog) return
     let active = true
     window.api.getLog(projectName, componentName).then((log) => {
       if (active) setContent(log)
     })
-    window.api.startLogTail(projectName, componentName)
-    const unsubscribe = window.api.onLogData((data) => {
-      // onLogData fires for all tailed files — scope to this project's component.
-      // Component names aren't unique across projects, so match the project directory too.
-      // Use a path-segment boundary (directory + '/') to avoid prefix collisions
-      // (e.g. '/projects/shop' must not match '/projects/shop-staging').
-      if (!data.logFile.startsWith(`${directory}/`) || !data.logFile.endsWith(`/${componentName}.log`))
-        return
-      setContent((prev) => prev + data.content)
-    })
+    const unsubscribe = shouldTailLog
+      ? window.api.onLogData((data) => {
+          // onLogData fires for all tailed files — scope to this project's component.
+          // Component names aren't unique across projects, so match the project directory too.
+          // Use a path-segment boundary (directory + '/') to avoid prefix collisions
+          // (e.g. '/projects/shop' must not match '/projects/shop-staging').
+          if (
+            !data.logFile.startsWith(`${directory}/`) ||
+            !data.logFile.endsWith(`/${componentName}.log`)
+          )
+            return
+          setContent((prev) => prev + data.content)
+        })
+      : undefined
+    if (shouldTailLog) {
+      window.api.startLogTail(projectName, componentName)
+    }
     return () => {
       active = false
-      unsubscribe()
-      window.api.stopLogTail(projectName, componentName)
+      unsubscribe?.()
+      if (shouldTailLog) {
+        window.api.stopLogTail(projectName, componentName)
+      }
     }
-  }, [projectName, componentName, hasLogs, directory])
+  }, [projectName, componentName, canReadServiceLog, shouldTailLog, directory])
 
   useEffect(() => {
     if (autoScrollRef.current && containerRef.current) {
@@ -54,7 +64,7 @@ export function LogsTab({
     autoScrollRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 50
   }
 
-  if (!hasLogs) {
+  if (!canReadServiceLog) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
         <p className="text-[13px] text-zinc-400">No logs — external process</p>
