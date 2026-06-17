@@ -1,10 +1,14 @@
 import { ActivePort, PortConflict, ResolvedProject } from '../config/types'
 import { buildPortOwnerMap } from './port-matcher'
 
+function uniqueClaimants(owners: { projectName: string; componentName: string }[]): string[] {
+  return [...new Set(owners.map((o) => `${o.projectName}/${o.componentName}`))]
+}
+
 /**
  * Detects port conflicts across all projects.
  *
- * Static conflicts: two or more manifests declare the same port.
+ * Static conflicts: two or more distinct project components declare the same port.
  * Runtime conflicts: a port is in use by a process that doesn't match the declaring component.
  */
 export function detectConflicts(
@@ -20,13 +24,15 @@ export function detectConflicts(
   }
 
   for (const [port, owners] of portOwnerMap) {
-    // Static conflict: multiple declarations
-    if (owners.length > 1) {
+    const claimants = uniqueClaimants(owners)
+
+    // Static conflict: multiple distinct declarations
+    if (claimants.length > 1) {
       const active = activePortMap.get(port)
       conflicts.push({
         port,
         type: 'static',
-        claimants: owners.map((o) => `${o.projectName}/${o.componentName}`),
+        claimants,
         activeProcess: active?.process,
         activePid: active?.pid
       })

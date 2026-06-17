@@ -39,4 +39,24 @@ describe('OverviewDetail', () => {
     expect(screen.getAllByText(/:3000/)).toHaveLength(2)
     expect(screen.getByText('shop')).toBeInTheDocument()
   })
+
+  it('renders duplicate conflict claimants once in the summary', () => {
+    render(
+      <OverviewDetail
+        state={{
+          ...state,
+          conflicts: [
+            {
+              port: 3000,
+              type: 'static',
+              claimants: ['shop/web', 'shop/web', 'blog/web']
+            }
+          ]
+        }}
+      />
+    )
+
+    expect(screen.getAllByText('shop/web')).toHaveLength(1)
+    expect(screen.getByText('blog/web')).toBeInTheDocument()
+  })
 })

@@ -6,6 +6,14 @@ export interface PortOwner {
   label: string
 }
 
+function ownerId(owner: Pick<PortOwner, 'projectName' | 'componentName'>): string {
+  return `${owner.projectName}/${owner.componentName}`
+}
+
+function hasMultipleDistinctOwners(owners: PortOwner[]): boolean {
+  return new Set(owners.map(ownerId)).size > 1
+}
+
 /**
  * Builds a map of declared ports to their owners from resolved projects.
  */
@@ -18,6 +26,10 @@ export function buildPortOwnerMap(
     for (const [componentName, component] of Object.entries(project.components)) {
       for (const portDecl of component.ports) {
         const owners = portMap.get(portDecl.port) ?? []
+        const nextOwnerId = ownerId({ projectName: project.name, componentName })
+        if (owners.some((owner) => ownerId(owner) === nextOwnerId)) {
+          continue
+        }
         owners.push({
           projectName: project.name,
           componentName,
@@ -47,7 +59,7 @@ export function matchPortsForComponent(
     const owners = portOwnerMap.get(decl.port) ?? []
 
     // Check for static conflicts (multiple declarations)
-    const hasStaticConflict = owners.length > 1
+    const hasStaticConflict = hasMultipleDistinctOwners(owners)
 
     if (!active) {
       return {

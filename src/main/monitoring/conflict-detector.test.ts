@@ -65,6 +65,67 @@ describe('conflict-detector', () => {
     expect(conflicts[0].claimants).toEqual(['a/web', 'a/api'])
   })
 
+  it('deduplicates repeated declarations from the same project component', () => {
+    const projects = new Map<string, ResolvedProject>()
+    projects.set(
+      '/work/a',
+      makeProject('a', {
+        web: {
+          ports: [
+            { port: 3000, label: 'Web' },
+            { port: 3000, label: 'Web' }
+          ]
+        },
+        docs: { ports: [{ port: 3000, label: 'Docs' }] }
+      })
+    )
+
+    const conflicts = detectConflicts(projects, [])
+
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0].claimants).toEqual(['a/web', 'a/docs'])
+  })
+
+  it('does not report a conflict for duplicate declarations from only one component', () => {
+    const projects = new Map<string, ResolvedProject>()
+    projects.set(
+      '/work/a',
+      makeProject('a', {
+        web: {
+          ports: [
+            { port: 3000, label: 'Web' },
+            { port: 3000, label: 'Web' }
+          ]
+        }
+      })
+    )
+
+    const conflicts = detectConflicts(projects, [{ port: 3000, pid: 1234, process: 'node' }])
+
+    expect(conflicts).toEqual([])
+  })
+
+  it('deduplicates repeated discoveries of the same project component', () => {
+    const projects = new Map<string, ResolvedProject>()
+    projects.set(
+      '/work/a',
+      makeProject('bandai', { frontend: { ports: [{ port: 3000, label: 'Web' }] } })
+    )
+    projects.set(
+      '/work/a-copy',
+      makeProject('bandai', { frontend: { ports: [{ port: 3000, label: 'Web' }] } })
+    )
+    projects.set(
+      '/work/a-docs',
+      makeProject('bandai', { docs: { ports: [{ port: 3000, label: 'Docs' }] } })
+    )
+
+    const conflicts = detectConflicts(projects, [])
+
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0].claimants).toEqual(['bandai/frontend', 'bandai/docs'])
+  })
+
   it('returns empty for no projects', () => {
     const conflicts = detectConflicts(new Map(), [])
     expect(conflicts).toEqual([])
