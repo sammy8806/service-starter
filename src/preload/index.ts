@@ -33,12 +33,22 @@ const api = {
   // Log streaming
   getLog: (projectName: string, componentName: string) =>
     ipcRenderer.invoke('log:get', projectName, componentName),
-  startLogTail: (projectName: string, componentName: string) =>
-    ipcRenderer.send('log:start-tail', projectName, componentName),
+  startLogTail: (projectName: string, componentName: string, startOffset?: number) =>
+    ipcRenderer.send('log:start-tail', projectName, componentName, startOffset),
   stopLogTail: (projectName: string, componentName: string) =>
     ipcRenderer.send('log:stop-tail', projectName, componentName),
-  onLogData: (callback: (data: { logFile: string; content: string }) => void) => {
-    const handler = (_event: Electron.IpcRendererEvent, data: { logFile: string; content: string }): void =>
+  onLogData: (
+    callback: (data: {
+      logFile: string
+      content: string
+      projectName?: string
+      componentName?: string
+    }) => void
+  ) => {
+    const handler = (
+      _event: Electron.IpcRendererEvent,
+      data: { logFile: string; content: string; projectName?: string; componentName?: string }
+    ): void =>
       callback(data)
     ipcRenderer.on('log:data', handler)
     return () => ipcRenderer.removeListener('log:data', handler)

@@ -117,6 +117,7 @@ export function ComponentDetail({
             componentName={component.name}
             processOrigin={component.processOrigin}
             directory={directory}
+            hasServiceLog={component.hasServiceLog}
           />
         )}
         {tab === 'ports' && <PortsTab component={component} />}

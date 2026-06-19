@@ -129,6 +129,7 @@ export interface ComponentState {
   codeDir?: string
   workDir?: string
   startedAt?: number // epoch ms; only set for managed processes
+  hasServiceLog?: boolean
 }
 
 export interface ProjectState {

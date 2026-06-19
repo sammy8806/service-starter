@@ -11,10 +11,13 @@ import {
 } from 'fs'
 
 interface TailState {
-  watcher: FSWatcher
+  watcher?: FSWatcher
+  pollTimer: ReturnType<typeof setInterval>
   offset: number
   logFile: string
 }
+
+const LOG_POLL_INTERVAL_MS = 250
 
 /**
  * Reads and tails log files, emitting new content for streaming to renderer.
@@ -32,33 +35,49 @@ export class LogStreamer extends EventEmitter {
     }
   }
 
-  startTailing(logFile: string): void {
+  startTailing(logFile: string, startOffset?: number): void {
     // Stop existing tail on same file
     this.stopTailing(logFile)
 
     if (!existsSync(logFile)) return
 
     const stat = statSync(logFile)
-    const offset = stat.size
+    const offset =
+      typeof startOffset === 'number' && Number.isFinite(startOffset) && startOffset >= 0
+        ? Math.min(Math.floor(startOffset), stat.size)
+        : stat.size
 
-    const watcher = watch(logFile, () => {
+    let watcher: FSWatcher | undefined
+    try {
+      watcher = watch(logFile, () => {
+        this.readNewContent(logFile)
+      })
+    } catch {
+      watcher = undefined
+    }
+
+    const pollTimer = setInterval(() => {
       this.readNewContent(logFile)
-    })
+    }, LOG_POLL_INTERVAL_MS)
+    pollTimer.unref?.()
 
-    this.tails.set(logFile, { watcher, offset, logFile })
+    this.tails.set(logFile, { watcher, pollTimer, offset, logFile })
+    this.readNewContent(logFile)
   }
 
   stopTailing(logFile: string): void {
     const tail = this.tails.get(logFile)
     if (tail) {
-      tail.watcher.close()
+      tail.watcher?.close()
+      clearInterval(tail.pollTimer)
       this.tails.delete(logFile)
     }
   }
 
   stopAll(): void {
-    for (const [file, tail] of this.tails) {
-      tail.watcher.close()
+    for (const tail of this.tails.values()) {
+      tail.watcher?.close()
+      clearInterval(tail.pollTimer)
     }
     this.tails.clear()
   }

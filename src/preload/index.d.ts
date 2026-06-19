@@ -16,6 +16,13 @@ export interface ContextMenuPayload {
   pid?: number
 }
 
+export interface LogDataPayload {
+  logFile: string
+  content: string
+  projectName?: string
+  componentName?: string
+}
+
 export interface ServiceStarterAPI {
   getState: () => Promise<unknown>
   getProjects: () => Promise<unknown>
@@ -33,9 +40,9 @@ export interface ServiceStarterAPI {
   startProject: (projectName: string) => Promise<boolean>
   stopProject: (projectName: string) => Promise<boolean>
   getLog: (projectName: string, componentName: string) => Promise<string>
-  startLogTail: (projectName: string, componentName: string) => void
+  startLogTail: (projectName: string, componentName: string, startOffset?: number) => void
   stopLogTail: (projectName: string, componentName: string) => void
-  onLogData: (callback: (data: { logFile: string; content: string }) => void) => () => void
+  onLogData: (callback: (data: LogDataPayload) => void) => () => void
   onStateUpdate: (callback: (state: unknown) => void) => () => void
   getFavorites: () => Promise<string[]>
   toggleFavorite: (projectName: string) => Promise<string[]>

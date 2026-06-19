@@ -16,7 +16,7 @@ interface HandlerDependencies {
   startProject: (projectName: string) => Promise<void>
   stopProject: (projectName: string) => Promise<void>
   getLog: (projectName: string, componentName: string) => string
-  startLogTail: (projectName: string, componentName: string) => void
+  startLogTail: (projectName: string, componentName: string, startOffset?: number) => void
   stopLogTail: (projectName: string, componentName: string) => void
   getFavorites: () => string[]
   toggleFavorite: (projectName: string) => string[]
@@ -104,9 +104,12 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
     return deps.getLog(projectName, componentName)
   })
 
-  ipcMain.on(IPC_CHANNELS.LOG_START_TAIL, (_event, projectName: string, componentName: string) => {
-    deps.startLogTail(projectName, componentName)
-  })
+  ipcMain.on(
+    IPC_CHANNELS.LOG_START_TAIL,
+    (_event, projectName: string, componentName: string, startOffset?: number) => {
+      deps.startLogTail(projectName, componentName, startOffset)
+    }
+  )
 
   ipcMain.on(IPC_CHANNELS.LOG_STOP_TAIL, (_event, projectName: string, componentName: string) => {
     deps.stopLogTail(projectName, componentName)
@@ -162,10 +165,14 @@ export function pushStateToRenderers(state: AppState): void {
 /**
  * Pushes log data to all renderer windows.
  */
-export function pushLogDataToRenderers(logFile: string, content: string): void {
+export function pushLogDataToRenderers(
+  logFile: string,
+  content: string,
+  context?: { projectName: string; componentName: string }
+): void {
   for (const win of BrowserWindow.getAllWindows()) {
     if (!win.isDestroyed()) {
-      win.webContents.send(IPC_CHANNELS.LOG_DATA, { logFile, content })
+      win.webContents.send(IPC_CHANNELS.LOG_DATA, { logFile, content, ...context })
     }
   }
 }

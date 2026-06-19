@@ -6,51 +6,83 @@ interface LogsTabProps {
   componentName: string
   processOrigin: ComponentStateView['processOrigin']
   directory: string
+  hasServiceLog?: boolean
+}
+
+interface LogDataPayload {
+  logFile: string
+  content: string
+  projectName?: string
+  componentName?: string
 }
 
 export function LogsTab({
   projectName,
   componentName,
   processOrigin,
-  directory
+  directory,
+  hasServiceLog = false
 }: LogsTabProps): React.JSX.Element {
   const [content, setContent] = useState('')
+  const [serviceLogChecked, setServiceLogChecked] = useState(false)
+  const [hasReadableServiceLog, setHasReadableServiceLog] = useState(hasServiceLog)
   const containerRef = useRef<HTMLPreElement>(null)
   const autoScrollRef = useRef(true)
-  const canReadServiceLog = processOrigin !== 'external'
-  const shouldTailLog = processOrigin === 'managed'
 
   useEffect(() => {
-    if (!canReadServiceLog) return
     let active = true
-    window.api.getLog(projectName, componentName).then((log) => {
-      if (active) setContent(log)
-    })
-    const unsubscribe = shouldTailLog
-      ? window.api.onLogData((data) => {
-          // onLogData fires for all tailed files — scope to this project's component.
-          // Component names aren't unique across projects, so match the project directory too.
-          // Use a path-segment boundary (directory + '/') to avoid prefix collisions
-          // (e.g. '/projects/shop' must not match '/projects/shop-staging').
-          if (
-            !data.logFile.startsWith(`${directory}/`) ||
-            !data.logFile.endsWith(`/${componentName}.log`)
-          )
-            return
-          setContent((prev) => prev + data.content)
-        })
-      : undefined
-    if (shouldTailLog) {
-      window.api.startLogTail(projectName, componentName)
+    let unsubscribe: (() => void) | undefined
+    let tailStarted = false
+
+    setServiceLogChecked(false)
+    setHasReadableServiceLog(hasServiceLog)
+
+    const appendOwnLogData = (data: LogDataPayload): void => {
+      if (data.projectName || data.componentName) {
+        if (data.projectName !== projectName || data.componentName !== componentName) return
+      } else if (
+        !data.logFile.startsWith(`${directory.replace(/\/+$/, '')}/`) ||
+        !data.logFile.endsWith(`/${componentName}.log`)
+      ) {
+        return
+      }
+
+      setContent((prev) => prev + data.content)
     }
+
+    const loadAndTailLog = async (): Promise<void> => {
+      const log = await window.api.getLog(projectName, componentName)
+      if (!active) return
+
+      const canReadServiceLog = processOrigin !== 'external' || hasServiceLog || log.length > 0
+      setHasReadableServiceLog(canReadServiceLog)
+      setServiceLogChecked(true)
+
+      if (!canReadServiceLog) {
+        setContent('')
+        return
+      }
+
+      setContent(log)
+
+      const shouldTailLog = processOrigin === 'managed' || processOrigin === 'external'
+      if (shouldTailLog) {
+        unsubscribe = window.api.onLogData(appendOwnLogData)
+        window.api.startLogTail(projectName, componentName, new TextEncoder().encode(log).length)
+        tailStarted = true
+      }
+    }
+
+    void loadAndTailLog()
+
     return () => {
       active = false
       unsubscribe?.()
-      if (shouldTailLog) {
+      if (tailStarted) {
         window.api.stopLogTail(projectName, componentName)
       }
     }
-  }, [projectName, componentName, canReadServiceLog, shouldTailLog, directory])
+  }, [projectName, componentName, processOrigin, hasServiceLog, directory])
 
   useEffect(() => {
     if (autoScrollRef.current && containerRef.current) {
@@ -64,7 +96,7 @@ export function LogsTab({
     autoScrollRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 50
   }
 
-  if (!canReadServiceLog) {
+  if (processOrigin === 'external' && serviceLogChecked && !hasReadableServiceLog) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
         <p className="text-[13px] text-zinc-400">No logs — external process</p>

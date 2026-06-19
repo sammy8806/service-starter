@@ -1,6 +1,7 @@
 import { app, BrowserWindow, clipboard, dialog, ipcMain, shell } from 'electron'
 import { join } from 'path'
 import { execFileSync } from 'child_process'
+import { existsSync } from 'fs'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 
 // Packaged Electron apps on macOS don't inherit the user's shell PATH,
@@ -49,6 +50,7 @@ let trayWindow: TrayWindow
 let dashboardWindow: BrowserWindow | null = null
 let processManager: ProcessManager
 let logStreamer: LogStreamer
+const logTailContexts = new Map<string, { projectName: string; componentName: string }>()
 
 function buildAppState(): AppState {
   const projects: Record<string, ProjectState> = {}
@@ -88,6 +90,7 @@ function buildAppState(): AppState {
 
       const managed = processManager.getManagedProcess(project.name, compName)
       const startedAt = managed ? Date.parse(managed.startedAt) : undefined
+      const logFile = join(dir, '.service-starter', 'logs', `${compName}.log`)
 
       components[compName] = {
         name: compName,
@@ -98,7 +101,8 @@ function buildAppState(): AppState {
         editor: comp.editor,
         codeDir: comp.codeDir ? join(dir, comp.codeDir) : undefined,
         workDir: comp.workDir ? join(dir, comp.workDir) : undefined,
-        startedAt: Number.isNaN(startedAt) ? undefined : startedAt
+        startedAt: Number.isNaN(startedAt) ? undefined : startedAt,
+        hasServiceLog: existsSync(logFile)
       }
     }
 
@@ -331,11 +335,12 @@ app.whenReady().then(() => {
       }
       return ''
     },
-    startLogTail: (projectName: string, componentName: string) => {
+    startLogTail: (projectName: string, componentName: string, startOffset?: number) => {
       for (const [dir, project] of projectRegistry.getProjects()) {
         if (project.name === projectName) {
           const logFile = join(dir, '.service-starter', 'logs', `${componentName}.log`)
-          logStreamer.startTailing(logFile)
+          logTailContexts.set(logFile, { projectName, componentName })
+          logStreamer.startTailing(logFile, startOffset)
           return
         }
       }
@@ -345,6 +350,7 @@ app.whenReady().then(() => {
         if (project.name === projectName) {
           const logFile = join(dir, '.service-starter', 'logs', `${componentName}.log`)
           logStreamer.stopTailing(logFile)
+          logTailContexts.delete(logFile)
           return
         }
       }
@@ -466,7 +472,7 @@ app.whenReady().then(() => {
   processManager.on('process-stopped', pushState)
 
   logStreamer.on('log-data', ({ logFile, content }: { logFile: string; content: string }) => {
-    pushLogDataToRenderers(logFile, content)
+    pushLogDataToRenderers(logFile, content, logTailContexts.get(logFile))
   })
 
   // Initial state push

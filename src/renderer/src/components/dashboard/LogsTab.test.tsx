@@ -13,16 +13,62 @@ beforeEach(() => {
 })
 
 describe('LogsTab', () => {
-  it('shows the external empty state for non-managed components', () => {
+  type LogData = {
+    logFile: string
+    content: string
+    projectName?: string
+    componentName?: string
+  }
+
+  it('shows the external empty state when no Service Starter log exists', async () => {
+    ;(window.api.getLog as ReturnType<typeof vi.fn>).mockResolvedValueOnce('')
+
     render(<LogsTab projectName="p" componentName="c" processOrigin="external" directory="/p" />)
-    expect(screen.getByText(/external process/i)).toBeInTheDocument()
-    expect(window.api.getLog).not.toHaveBeenCalled()
+
+    await waitFor(() => expect(screen.getByText(/external process/i)).toBeInTheDocument())
+    expect(window.api.getLog).toHaveBeenCalledWith('p', 'c')
+  })
+
+  it('keeps Service Starter logs visible while a component is temporarily external', async () => {
+    render(
+      <LogsTab
+        projectName="p"
+        componentName="c"
+        processOrigin="external"
+        directory="/p"
+        hasServiceLog
+      />
+    )
+
+    await waitFor(() => expect(screen.getByText(/line one/)).toBeInTheDocument())
+    expect(screen.queryByText(/external process/i)).not.toBeInTheDocument()
+    expect(window.api.startLogTail).toHaveBeenCalledWith(
+      'p',
+      'c',
+      new TextEncoder().encode('line one\nline two\n').length
+    )
+  })
+
+  it('keeps external-status logs visible even before state reports hasServiceLog', async () => {
+    render(<LogsTab projectName="p" componentName="c" processOrigin="external" directory="/p" />)
+
+    await waitFor(() => expect(screen.getByText(/line one/)).toBeInTheDocument())
+    expect(screen.queryByText(/external process/i)).not.toBeInTheDocument()
+    expect(window.api.startLogTail).toHaveBeenCalledWith(
+      'p',
+      'c',
+      new TextEncoder().encode('line one\nline two\n').length
+    )
   })
 
   it('loads and renders initial log content for managed components', async () => {
     render(<LogsTab projectName="p" componentName="c" processOrigin="managed" directory="/p" />)
     await waitFor(() => expect(screen.getByText(/line one/)).toBeInTheDocument())
-    expect(window.api.startLogTail).toHaveBeenCalledWith('p', 'c')
+    expect(window.api.startLogTail).toHaveBeenCalledWith(
+      'p',
+      'c',
+      new TextEncoder().encode('line one\nline two\n').length
+    )
   })
 
   it('loads previous log content for stopped managed components without tailing', async () => {
@@ -34,7 +80,7 @@ describe('LogsTab', () => {
   })
 
   it('only appends log data for its own component+directory', async () => {
-    let cb: (d: { logFile: string; content: string }) => void = () => {}
+    let cb: (d: LogData) => void = () => {}
     ;(window.api.onLogData as ReturnType<typeof vi.fn>).mockImplementation((fn) => {
       cb = fn
       return () => {}
@@ -56,5 +102,64 @@ describe('LogsTab', () => {
     await waitFor(() => expect(screen.getByText(/MINE/)).toBeInTheDocument())
     expect(screen.queryByText(/OTHER/)).not.toBeInTheDocument()
     expect(screen.queryByText(/PREFIX/)).not.toBeInTheDocument()
+  })
+
+  it('uses component metadata before falling back to path matching', async () => {
+    let cb: (d: LogData) => void = () => {}
+    ;(window.api.onLogData as ReturnType<typeof vi.fn>).mockImplementation((fn) => {
+      cb = fn
+      return () => {}
+    })
+
+    render(
+      <LogsTab
+        projectName="shop"
+        componentName="web"
+        processOrigin="managed"
+        directory="/projects/shop"
+      />
+    )
+
+    await waitFor(() => expect(window.api.startLogTail).toHaveBeenCalled())
+
+    act(() => {
+      cb({
+        logFile: '/different/path/.service-starter/logs/web.log',
+        content: 'STRUCTURED\n',
+        projectName: 'shop',
+        componentName: 'web'
+      })
+      cb({
+        logFile: '/projects/shop/.service-starter/logs/web.log',
+        content: 'WRONG\n',
+        projectName: 'shop',
+        componentName: 'api'
+      })
+    })
+
+    await waitFor(() => expect(screen.getByText(/STRUCTURED/)).toBeInTheDocument())
+    expect(screen.queryByText(/WRONG/)).not.toBeInTheDocument()
+  })
+
+  it('reloads and tails from the new log position when a stopped component starts', async () => {
+    ;(window.api.getLog as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce('previous run\n')
+      .mockResolvedValueOnce('fresh startup\n')
+
+    const { rerender } = render(
+      <LogsTab projectName="p" componentName="c" processOrigin="none" directory="/p" />
+    )
+
+    await waitFor(() => expect(screen.getByText(/previous run/)).toBeInTheDocument())
+
+    rerender(<LogsTab projectName="p" componentName="c" processOrigin="managed" directory="/p" />)
+
+    await waitFor(() => expect(screen.getByText(/fresh startup/)).toBeInTheDocument())
+    expect(screen.queryByText(/previous run/)).not.toBeInTheDocument()
+    expect(window.api.startLogTail).toHaveBeenCalledWith(
+      'p',
+      'c',
+      new TextEncoder().encode('fresh startup\n').length
+    )
   })
 })

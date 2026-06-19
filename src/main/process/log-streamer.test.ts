@@ -15,6 +15,7 @@ describe('LogStreamer', () => {
 
   afterEach(() => {
     streamer.stopAll()
+    vi.useRealTimers()
   })
 
   describe('getLog', () => {
@@ -54,6 +55,39 @@ describe('LogStreamer', () => {
 
       expect(chunks.length).toBeGreaterThanOrEqual(1)
       expect(chunks.join('')).toContain('new line')
+    })
+
+    it('should emit bytes already written after the provided start offset', () => {
+      const logFile = join(tempDir, 'startup.log')
+      const loadedContent = 'initial read\n'
+      writeFileSync(logFile, `${loadedContent}startup line\n`)
+
+      const chunks: string[] = []
+      streamer.on('log-data', (data: { logFile: string; content: string }) => {
+        chunks.push(data.content)
+      })
+
+      streamer.startTailing(logFile, Buffer.byteLength(loadedContent, 'utf-8'))
+
+      expect(chunks.join('')).toBe('startup line\n')
+    })
+
+    it('should poll for appended content when watcher events are delayed', async () => {
+      vi.useFakeTimers()
+      const logFile = join(tempDir, 'poll.log')
+      writeFileSync(logFile, '')
+
+      const chunks: string[] = []
+      streamer.on('log-data', (data: { logFile: string; content: string }) => {
+        chunks.push(data.content)
+      })
+
+      streamer.startTailing(logFile)
+      appendFileSync(logFile, 'polled line\n')
+
+      await vi.advanceTimersByTimeAsync(300)
+
+      expect(chunks.join('')).toContain('polled line')
     })
   })
 

@@ -31,6 +31,7 @@ export interface ComponentStateView {
   codeDir?: string
   workDir?: string
   startedAt?: number
+  hasServiceLog?: boolean
 }
 
 export interface ProjectStateView {
