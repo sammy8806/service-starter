@@ -36,7 +36,8 @@ function appState(projects: ProjectStateView[], conflicts: AppStateView['conflic
     projects: Object.fromEntries(projects.map((p) => [p.name, p])),
     trayIcon: 'grey',
     conflicts,
-    favorites: []
+    favorites: [],
+    docker: { available: true, containers: [], missing: [] }
   }
 }
 

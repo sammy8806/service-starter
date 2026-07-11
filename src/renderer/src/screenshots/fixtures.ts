@@ -143,6 +143,45 @@ export const DEMO_STATE: AppStateView = {
         }
       }
     }
+  },
+  docker: {
+    available: true,
+    containers: [
+      {
+        id: 'a1b2c3d4e5f6',
+        name: 'shop-platform_postgres_1',
+        names: ['shop-platform_postgres_1'],
+        image: 'postgres:16-alpine',
+        state: 'running',
+        status: 'Up 3 hours',
+        usedBy: ['shop-platform', 'shop-platform/backend']
+      },
+      {
+        id: 'b2c3d4e5f6a7',
+        name: 'shop-platform-redis-1',
+        names: ['shop-platform-redis-1'],
+        image: 'redis:7-alpine',
+        state: 'running',
+        status: 'Up 3 hours',
+        usedBy: ['shop-platform']
+      },
+      {
+        id: 'c3d4e5f6a7b8',
+        name: 'rabbitmq',
+        names: ['rabbitmq'],
+        image: 'rabbitmq:3-management',
+        state: 'exited',
+        status: 'Exited (137) 10 minutes ago',
+        usedBy: ['shop-platform/worker']
+      }
+    ],
+    missing: [
+      {
+        ref: 'clickhouse',
+        image: 'clickhouse/clickhouse-server',
+        usedBy: ['analytics']
+      }
+    ]
   }
 }
 

@@ -17,7 +17,20 @@ export function dockerContainerRef(dep: DependencyStateView): { container: strin
 }
 
 export function dependencyLabel(dep: DependencyStateView): string {
+  if (dep.dependency.type === 'docker' && dep.docker?.matchedName) {
+    return dep.docker.matchedName
+  }
   return dep.dependency.name ?? dep.dependency.container ?? 'unknown'
+}
+
+export function dependencyManifestRef(dep: DependencyStateView): string | undefined {
+  if (dep.dependency.type !== 'docker') return undefined
+  const ref = dep.dependency.container
+  if (!ref) return undefined
+  if (dep.docker?.matchedName && dep.docker.matchedName !== ref) {
+    return `manifest: ${ref}`
+  }
+  return undefined
 }
 
 export function dependencyStatusLabel(dep: DependencyStateView): string {

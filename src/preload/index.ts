@@ -78,6 +78,10 @@ const api = {
     ipcRenderer.invoke('docker:start-container', container, image),
   stopDockerContainer: (container: string, image?: string) =>
     ipcRenderer.invoke('docker:stop-container', container, image),
+  startDockerContainerById: (containerId: string) =>
+    ipcRenderer.invoke('docker:start-container-id', containerId),
+  stopDockerContainerById: (containerId: string) =>
+    ipcRenderer.invoke('docker:stop-container-id', containerId),
 
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {

@@ -10,10 +10,22 @@ const stoppedDep: DependencyStateView = {
   docker: { state: 'stopped', matchedName: 'shop_postgres_1', statusText: 'Exited (0) 1 minute ago' }
 }
 
+const stoppedContainer = {
+  id: 'b2c3d4e5f6a7',
+  name: 'rabbitmq',
+  names: ['rabbitmq'],
+  image: 'rabbitmq:3-management',
+  state: 'exited',
+  status: 'Exited (137) 10 minutes ago',
+  usedBy: [] as string[]
+}
+
 beforeEach(() => {
   ;(window as unknown as { api: Record<string, unknown> }).api = {
     startDockerContainer: vi.fn().mockResolvedValue({ success: true }),
-    stopDockerContainer: vi.fn().mockResolvedValue({ success: true })
+    stopDockerContainer: vi.fn().mockResolvedValue({ success: true }),
+    startDockerContainerById: vi.fn().mockResolvedValue({ success: true }),
+    stopDockerContainerById: vi.fn().mockResolvedValue({ success: true })
   }
 })
 
@@ -36,6 +48,14 @@ describe('DockerContainerActions', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
     await waitFor(() =>
       expect(window.api.stopDockerContainer).toHaveBeenCalledWith('postgres', undefined)
+    )
+  })
+
+  it('starts a stopped container by docker id', async () => {
+    render(<DockerContainerActions container={stoppedContainer} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Start' }))
+    await waitFor(() =>
+      expect(window.api.startDockerContainerById).toHaveBeenCalledWith('b2c3d4e5f6a7')
     )
   })
 

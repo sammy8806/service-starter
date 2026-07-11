@@ -5,6 +5,7 @@ import {
   dependencyBadgeStatus,
   dependencyDetailLine,
   dependencyLabel,
+  dependencyManifestRef,
   dependencyStatusLabel,
   dependencyStatusTone
 } from '../../utils/dependencyDisplay'
@@ -23,6 +24,7 @@ const TONE_CLASS = {
 
 export function DependencyRow({ dep }: DependencyRowProps): React.JSX.Element {
   const label = dependencyLabel(dep)
+  const manifestRef = dependencyManifestRef(dep)
   const statusLabel = dependencyStatusLabel(dep)
   const badge = dependencyBadgeStatus(dep)
   const tone = dependencyStatusTone(dep)
@@ -38,7 +40,11 @@ export function DependencyRow({ dep }: DependencyRowProps): React.JSX.Element {
             {dep.dependency.type}
           </span>
         </div>
-        {detail && <div className="mt-0.5 truncate text-[11px] text-zinc-500">{detail}</div>}
+        {(manifestRef || detail) && (
+          <div className="mt-0.5 truncate text-[11px] text-zinc-500">
+            {[manifestRef, detail].filter(Boolean).join(' · ')}
+          </div>
+        )}
       </div>
       <DockerContainerActions dep={dep} />
       <span className={`shrink-0 text-[12px] font-medium ${TONE_CLASS[tone]}`}>{statusLabel}</span>

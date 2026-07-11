@@ -10,6 +10,7 @@ beforeEach(() => {
       trayIcon: 'green',
       favorites: [],
       conflicts: [],
+      docker: { available: true, containers: [], missing: [] },
       projects: {
         shop: {
           name: 'shop',

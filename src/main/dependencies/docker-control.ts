@@ -57,3 +57,33 @@ export async function stopDockerContainer(
     return { success: false, error: String(err) }
   }
 }
+
+export async function startDockerContainerById(containerId: string): Promise<DockerActionResult> {
+  try {
+    const container = getDocker().getContainer(containerId)
+    const inspect = await container.inspect()
+    if (inspect.State.Running) {
+      return { success: true }
+    }
+    await container.start()
+    return { success: true }
+  } catch (err) {
+    resetDockerClient()
+    return { success: false, error: String(err) }
+  }
+}
+
+export async function stopDockerContainerById(containerId: string): Promise<DockerActionResult> {
+  try {
+    const container = getDocker().getContainer(containerId)
+    const inspect = await container.inspect()
+    if (!inspect.State.Running) {
+      return { success: true }
+    }
+    await container.stop()
+    return { success: true }
+  } catch (err) {
+    resetDockerClient()
+    return { success: false, error: String(err) }
+  }
+}

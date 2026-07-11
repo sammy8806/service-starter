@@ -56,7 +56,9 @@ export const IPC_CHANNELS = {
 
   // Docker container control
   DOCKER_START: 'docker:start-container',
-  DOCKER_STOP: 'docker:stop-container'
+  DOCKER_STOP: 'docker:stop-container',
+  DOCKER_START_ID: 'docker:start-container-id',
+  DOCKER_STOP_ID: 'docker:stop-container-id'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

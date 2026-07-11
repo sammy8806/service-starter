@@ -57,6 +57,8 @@ export interface ServiceStarterAPI {
   getComponentEnv: (projectName: string, componentName: string) => Promise<Record<string, string>>
   startDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
   stopDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
+  startDockerContainerById: (containerId: string) => Promise<{ success: boolean; error?: string }>
+  stopDockerContainerById: (containerId: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

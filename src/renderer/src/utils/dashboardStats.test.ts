@@ -3,7 +3,7 @@ import { computeKpis } from './dashboardStats'
 import type { AppStateView } from '../context/AppContext'
 
 function state(over: Partial<AppStateView> = {}): AppStateView {
-  return { projects: {}, trayIcon: 'grey', conflicts: [], favorites: [], ...over }
+  return { projects: {}, trayIcon: 'grey', conflicts: [], favorites: [], docker: { available: true, containers: [], missing: [] }, ...over }
 }
 
 describe('computeKpis', () => {

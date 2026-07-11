@@ -9,6 +9,8 @@ import { checkDockerDependency } from './docker-checker'
 import { checkServiceDependency } from './service-checker'
 import { checkApiDependency } from './api-checker'
 import { checkProjectDependency } from './project-checker'
+import { buildDockerSnapshot } from './docker-snapshot'
+import { DockerSnapshot } from '../config/types'
 
 /**
  * Aggregates health check results for all dependencies across all projects.
@@ -17,6 +19,9 @@ import { checkProjectDependency } from './project-checker'
 export class HealthAggregator extends EventEmitter {
   private timer: ReturnType<typeof setInterval> | null = null
   private results = new Map<string, DependencyState>()
+  private dockerSnapshot: DockerSnapshot = { available: true, containers: [], missing: [] }
+  private latestProjects = new Map<string, ResolvedProject>()
+  private latestActivePorts: ActivePort[] = []
 
   constructor(private intervalMs: number = 10000) {
     super()
@@ -24,6 +29,10 @@ export class HealthAggregator extends EventEmitter {
 
   getResults(): Map<string, DependencyState> {
     return new Map(this.results)
+  }
+
+  getDockerSnapshot(): DockerSnapshot {
+    return this.dockerSnapshot
   }
 
   startPeriodicCheck(
@@ -51,19 +60,19 @@ export class HealthAggregator extends EventEmitter {
     projects: Map<string, ResolvedProject>,
     activePorts: ActivePort[]
   ): Promise<void> {
+    this.latestProjects = projects
+    this.latestActivePorts = activePorts
     const allDeps = collectAllDependencies(projects)
     const checks = allDeps.map(({ key, dep }) => this.checkOne(key, dep, projects, activePorts))
 
     await Promise.allSettled(checks)
+    this.dockerSnapshot = await buildDockerSnapshot(projects)
     this.emit('health-updated', this.results)
   }
 
-  /** Re-check a single docker container and update cached results immediately. */
-  async refreshDockerContainer(container: string, image?: string): Promise<DependencyState> {
-    const dep: Dependency = { type: 'docker', container, image }
-    const key = depKey('', dep)
-    await this.checkOne(key, dep, new Map(), [])
-    return this.results.get(key)!
+  /** Re-check docker containers and dependency health immediately. */
+  async refreshDocker(): Promise<void> {
+    await this.checkAll(this.latestProjects, this.latestActivePorts)
   }
 
   private async checkOne(

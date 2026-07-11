@@ -30,6 +30,8 @@ interface HandlerDependencies {
   getComponentEnv: (projectName: string, componentName: string) => Record<string, string>
   startDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
   stopDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
+  startDockerContainerById: (containerId: string) => Promise<{ success: boolean; error?: string }>
+  stopDockerContainerById: (containerId: string) => Promise<{ success: boolean; error?: string }>
 }
 
 /**
@@ -160,6 +162,14 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
     IPC_CHANNELS.DOCKER_STOP,
     async (_event, container: string, image?: string) => deps.stopDockerContainer(container, image)
   )
+
+  ipcMain.handle(IPC_CHANNELS.DOCKER_START_ID, async (_event, containerId: string) =>
+    deps.startDockerContainerById(containerId)
+  )
+
+  ipcMain.handle(IPC_CHANNELS.DOCKER_STOP_ID, async (_event, containerId: string) =>
+    deps.stopDockerContainerById(containerId)
+  )
 }
 
 /**
@@ -195,6 +205,7 @@ function serializeState(state: AppState): Record<string, unknown> {
     projects: state.projects,
     trayIcon: state.trayIcon,
     conflicts: state.conflicts,
-    favorites: state.favorites
+    favorites: state.favorites,
+    docker: state.docker
   }
 }

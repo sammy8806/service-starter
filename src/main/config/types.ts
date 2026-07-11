@@ -154,6 +154,30 @@ export interface AppState {
   trayIcon: TrayIconState
   conflicts: PortConflict[]
   favorites: string[]
+  docker: DockerSnapshot
+}
+
+export interface DockerContainerView {
+  id: string
+  name: string
+  names: string[]
+  image: string
+  state: string
+  status: string
+  usedBy: string[]
+}
+
+export interface DockerMissingView {
+  ref: string
+  image?: string
+  usedBy: string[]
+}
+
+export interface DockerSnapshot {
+  available: boolean
+  error?: string
+  containers: DockerContainerView[]
+  missing: DockerMissingView[]
 }
 
 export interface PortConflict {

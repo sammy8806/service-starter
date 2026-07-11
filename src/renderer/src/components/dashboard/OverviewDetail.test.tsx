@@ -22,7 +22,8 @@ const state: AppStateView = {
         }
       }
     }
-  }
+  },
+  docker: { available: true, containers: [], missing: [] }
 }
 
 describe('OverviewDetail', () => {

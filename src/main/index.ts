@@ -35,7 +35,8 @@ import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort, getProce
 import { registerContextMenuIpc } from './tray/context-menus'
 import { ProcessManager } from './process/process-manager'
 import { LogStreamer } from './process/log-streamer'
-import { startDockerContainer, stopDockerContainer } from './dependencies/docker-control'
+import { startDockerContainer, stopDockerContainer, startDockerContainerById, stopDockerContainerById } from './dependencies/docker-control'
+import { deriveComponentRuntimeState } from '../shared/component-runtime'
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -138,7 +139,8 @@ function buildAppState(): AppState {
     projects,
     trayIcon,
     conflicts: monitorState.conflicts,
-    favorites
+    favorites,
+    docker: healthAggregator.getDockerSnapshot()
   }
 }
 
@@ -399,7 +401,7 @@ app.whenReady().then(() => {
     startDockerContainer: async (container: string, image?: string) => {
       const result = await startDockerContainer(container, image)
       if (result.success) {
-        await healthAggregator.refreshDockerContainer(container, image)
+        await healthAggregator.refreshDocker()
         pushState()
       }
       return result
@@ -407,7 +409,23 @@ app.whenReady().then(() => {
     stopDockerContainer: async (container: string, image?: string) => {
       const result = await stopDockerContainer(container, image)
       if (result.success) {
-        await healthAggregator.refreshDockerContainer(container, image)
+        await healthAggregator.refreshDocker()
+        pushState()
+      }
+      return result
+    },
+    startDockerContainerById: async (containerId: string) => {
+      const result = await startDockerContainerById(containerId)
+      if (result.success) {
+        await healthAggregator.refreshDocker()
+        pushState()
+      }
+      return result
+    },
+    stopDockerContainerById: async (containerId: string) => {
+      const result = await stopDockerContainerById(containerId)
+      if (result.success) {
+        await healthAggregator.refreshDocker()
         pushState()
       }
       return result

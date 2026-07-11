@@ -16,6 +16,7 @@ function buildState(): AppStateView {
     trayIcon: 'green',
     conflicts: [],
     favorites: [],
+    docker: { available: true, containers: [], missing: [] },
     projects: {
       bandai: {
         name: 'bandai',

@@ -14,7 +14,7 @@ function comp(name: string, over: Partial<ComponentStateView> = {}): ComponentSt
 }
 
 function state(projects: AppStateView['projects']): AppStateView {
-  return { projects, trayIcon: 'grey', conflicts: [], favorites: [] }
+  return { projects, trayIcon: 'grey', conflicts: [], favorites: [], docker: { available: true, containers: [], missing: [] } }
 }
 
 describe('buildDashboardTree', () => {

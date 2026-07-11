@@ -62,13 +62,38 @@ export interface AppStateView {
   trayIcon: 'grey' | 'green' | 'orange'
   conflicts: PortConflictView[]
   favorites: string[]
+  docker: DockerSnapshotView
+}
+
+export interface DockerContainerView {
+  id: string
+  name: string
+  names: string[]
+  image: string
+  state: string
+  status: string
+  usedBy: string[]
+}
+
+export interface DockerMissingView {
+  ref: string
+  image?: string
+  usedBy: string[]
+}
+
+export interface DockerSnapshotView {
+  available: boolean
+  error?: string
+  containers: DockerContainerView[]
+  missing: DockerMissingView[]
 }
 
 const DEFAULT_STATE: AppStateView = {
   projects: {},
   trayIcon: 'grey',
   conflicts: [],
-  favorites: []
+  favorites: [],
+  docker: { available: true, containers: [], missing: [] }
 }
 
 interface AppContextType {
