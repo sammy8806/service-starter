@@ -1,5 +1,6 @@
 import type { DependencyStateView } from '../../context/AppContext'
 import { StatusBadge } from '../StatusBadge'
+import { DockerContainerActions } from './DockerContainerActions'
 import {
   dependencyBadgeStatus,
   dependencyDetailLine,
@@ -39,6 +40,7 @@ export function DependencyRow({ dep }: DependencyRowProps): React.JSX.Element {
         </div>
         {detail && <div className="mt-0.5 truncate text-[11px] text-zinc-500">{detail}</div>}
       </div>
+      <DockerContainerActions dep={dep} />
       <span className={`shrink-0 text-[12px] font-medium ${TONE_CLASS[tone]}`}>{statusLabel}</span>
     </div>
   )

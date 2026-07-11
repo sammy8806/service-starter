@@ -39,7 +39,9 @@ function installMockApi(): void {
     tailLogs: noop,
     hideWindow: noop,
     showProcessInfo: noop,
-    stopAllManaged: noopBool
+    stopAllManaged: noopBool,
+    startDockerContainer: async () => ({ success: true }),
+    stopDockerContainer: async () => ({ success: true })
   }
 }
 

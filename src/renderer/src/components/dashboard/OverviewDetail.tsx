@@ -6,6 +6,7 @@ import { KpiCard } from './ui/KpiCard'
 import { Section } from './ui/Section'
 import { StatusChip } from './ui/StatusChip'
 import { EmptyState } from './ui/EmptyState'
+import { DockerContainerActions } from './DockerContainerActions'
 
 interface OverviewDetailProps {
   state: AppStateView
@@ -119,6 +120,9 @@ export function OverviewDetail({ state }: OverviewDetailProps): React.JSX.Elemen
                     <th scope="col" className="px-4 py-2.5 font-medium">
                       Detail
                     </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium text-right">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
@@ -138,6 +142,11 @@ export function OverviewDetail({ state }: OverviewDetailProps): React.JSX.Elemen
                       </td>
                       <td className="px-4 py-2.5 text-[11px] text-zinc-500">
                         {row.dep.docker?.statusText ?? row.dep.docker?.matchedName ?? row.dep.error ?? '—'}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <div className="flex justify-end">
+                          <DockerContainerActions dep={row.dep} compact />
+                        </div>
                       </td>
                     </tr>
                   ))}

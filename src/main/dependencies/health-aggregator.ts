@@ -58,6 +58,14 @@ export class HealthAggregator extends EventEmitter {
     this.emit('health-updated', this.results)
   }
 
+  /** Re-check a single docker container and update cached results immediately. */
+  async refreshDockerContainer(container: string, image?: string): Promise<DependencyState> {
+    const dep: Dependency = { type: 'docker', container, image }
+    const key = depKey('', dep)
+    await this.checkOne(key, dep, new Map(), [])
+    return this.results.get(key)!
+  }
+
   private async checkOne(
     key: string,
     dep: Dependency,

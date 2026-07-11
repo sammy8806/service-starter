@@ -1,5 +1,21 @@
 import type { DependencyStateView } from '../../context/AppContext'
 
+export function canStartDocker(dep: DependencyStateView): boolean {
+  return dep.dependency.type === 'docker' && dep.docker?.state === 'stopped'
+}
+
+export function canStopDocker(dep: DependencyStateView): boolean {
+  return dep.dependency.type === 'docker' && dep.docker?.state === 'running'
+}
+
+export function dockerContainerRef(dep: DependencyStateView): { container: string; image?: string } | null {
+  if (dep.dependency.type !== 'docker' || !dep.dependency.container) return null
+  return {
+    container: dep.dependency.container,
+    image: dep.dependency.image
+  }
+}
+
 export function dependencyLabel(dep: DependencyStateView): string {
   return dep.dependency.name ?? dep.dependency.container ?? 'unknown'
 }

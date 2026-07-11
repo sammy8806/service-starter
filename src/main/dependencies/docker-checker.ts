@@ -11,6 +11,8 @@ function getDocker(): Dockerode {
   return docker
 }
 
+export { getDocker }
+
 /** Reset cached client after connection failures so the next check retries. */
 export function resetDockerClient(): void {
   docker = null

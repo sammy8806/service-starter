@@ -35,7 +35,7 @@ import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort, getProce
 import { registerContextMenuIpc } from './tray/context-menus'
 import { ProcessManager } from './process/process-manager'
 import { LogStreamer } from './process/log-streamer'
-import { deriveComponentRuntimeState } from '../shared/component-runtime'
+import { startDockerContainer, stopDockerContainer } from './dependencies/docker-control'
 
 // ── State ─────────────────────────────────────────────────────────────
 
@@ -395,6 +395,22 @@ app.whenReady().then(() => {
         }
       }
       return {}
+    },
+    startDockerContainer: async (container: string, image?: string) => {
+      const result = await startDockerContainer(container, image)
+      if (result.success) {
+        await healthAggregator.refreshDockerContainer(container, image)
+        pushState()
+      }
+      return result
+    },
+    stopDockerContainer: async (container: string, image?: string) => {
+      const result = await stopDockerContainer(container, image)
+      if (result.success) {
+        await healthAggregator.refreshDockerContainer(container, image)
+        pushState()
+      }
+      return result
     }
   })
 

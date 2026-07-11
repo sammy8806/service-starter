@@ -55,6 +55,8 @@ export interface ServiceStarterAPI {
   showContextMenu: (type: ContextMenuType, payload: ContextMenuPayload) => void
   selectDirectory: () => Promise<string | null>
   getComponentEnv: (projectName: string, componentName: string) => Promise<Record<string, string>>
+  startDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
+  stopDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

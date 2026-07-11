@@ -28,6 +28,8 @@ interface HandlerDependencies {
   tailLogs: (projectName: string, componentName: string) => void
   selectDirectory: () => Promise<string | null>
   getComponentEnv: (projectName: string, componentName: string) => Record<string, string>
+  startDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
+  stopDockerContainer: (container: string, image?: string) => Promise<{ success: boolean; error?: string }>
 }
 
 /**
@@ -148,6 +150,16 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
   ipcMain.handle(IPC_CHANNELS.COMPONENT_GET_ENV, (_event, projectName: string, componentName: string) => {
     return deps.getComponentEnv(projectName, componentName)
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCKER_START,
+    async (_event, container: string, image?: string) => deps.startDockerContainer(container, image)
+  )
+
+  ipcMain.handle(
+    IPC_CHANNELS.DOCKER_STOP,
+    async (_event, container: string, image?: string) => deps.stopDockerContainer(container, image)
+  )
 }
 
 /**

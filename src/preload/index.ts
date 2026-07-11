@@ -74,6 +74,10 @@ const api = {
   selectDirectory: () => ipcRenderer.invoke('dialog:select-directory'),
   getComponentEnv: (projectName: string, componentName: string) =>
     ipcRenderer.invoke('component:get-env', projectName, componentName),
+  startDockerContainer: (container: string, image?: string) =>
+    ipcRenderer.invoke('docker:start-container', container, image),
+  stopDockerContainer: (container: string, image?: string) =>
+    ipcRenderer.invoke('docker:stop-container', container, image),
 
   // State update listener
   onStateUpdate: (callback: (state: unknown) => void) => {

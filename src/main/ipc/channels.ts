@@ -52,7 +52,11 @@ export const IPC_CHANNELS = {
 
   // Dashboard
   DIALOG_SELECT_DIRECTORY: 'dialog:select-directory',
-  COMPONENT_GET_ENV: 'component:get-env'
+  COMPONENT_GET_ENV: 'component:get-env',
+
+  // Docker container control
+  DOCKER_START: 'docker:start-container',
+  DOCKER_STOP: 'docker:stop-container'
 } as const
 
 export type IpcChannel = (typeof IPC_CHANNELS)[keyof typeof IPC_CHANNELS]

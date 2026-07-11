@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   collectDockerDependencies,
+  canStartDocker,
+  canStopDocker,
   dependencyStatusLabel,
   dependencyStatusTone
 } from './dependencyDisplay'
@@ -23,6 +25,13 @@ describe('dependencyDisplay', () => {
 
   it('treats missing containers as warning tone', () => {
     expect(dependencyStatusTone(dockerDep('postgres', 'not_found'))).toBe('warning')
+  })
+
+  it('allows start/stop only for applicable docker states', () => {
+    expect(canStartDocker(dockerDep('postgres', 'stopped'))).toBe(true)
+    expect(canStopDocker(dockerDep('postgres', 'stopped'))).toBe(false)
+    expect(canStopDocker(dockerDep('postgres', 'running'))).toBe(true)
+    expect(canStartDocker(dockerDep('postgres', 'not_found'))).toBe(false)
   })
 
   it('collects unique docker dependencies across projects', () => {
