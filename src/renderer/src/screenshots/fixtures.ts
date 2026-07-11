@@ -18,14 +18,27 @@ export const DEMO_STATE: AppStateView = {
       directory: '/Users/dev/projects/shop-platform',
       dependencies: [
         {
-          dependency: { type: 'docker', container: 'postgres' },
+          dependency: { type: 'docker', container: 'postgres', image: 'postgres:16' },
           health: 'healthy',
-          lastChecked: Date.now()
+          lastChecked: Date.now(),
+          docker: {
+            state: 'running',
+            matchedName: 'shop-platform_postgres_1',
+            containerId: 'a1b2c3d4e5f6',
+            image: 'postgres:16-alpine',
+            statusText: 'Up 3 hours'
+          }
         },
         {
           dependency: { type: 'docker', container: 'redis' },
           health: 'healthy',
-          lastChecked: Date.now()
+          lastChecked: Date.now(),
+          docker: {
+            state: 'running',
+            matchedName: 'redis',
+            image: 'redis:7-alpine',
+            statusText: 'Up 3 hours'
+          }
         }
       ],
       components: {
@@ -39,7 +52,12 @@ export const DEMO_STATE: AppStateView = {
             {
               dependency: { type: 'docker', container: 'postgres' },
               health: 'healthy',
-              lastChecked: Date.now()
+              lastChecked: Date.now(),
+              docker: {
+                state: 'running',
+                matchedName: 'shop-platform_postgres_1',
+                statusText: 'Up 3 hours'
+              }
             }
           ],
           ports: [
@@ -61,7 +79,20 @@ export const DEMO_STATE: AppStateView = {
           name: 'worker',
           status: 'stopped',
           processOrigin: 'none',
-          dependencies: [],
+          dependencies: [
+            {
+              dependency: { type: 'docker', container: 'rabbitmq' },
+              health: 'unhealthy',
+              lastChecked: Date.now(),
+              docker: {
+                state: 'stopped',
+                matchedName: 'rabbitmq',
+                image: 'rabbitmq:3-management',
+                statusText: 'Exited (137) 10 minutes ago'
+              },
+              error: 'Container "rabbitmq" is exited'
+            }
+          ],
           ports: []
         }
       }
@@ -73,7 +104,12 @@ export const DEMO_STATE: AppStateView = {
         {
           dependency: { type: 'docker', container: 'clickhouse' },
           health: 'unhealthy',
-          lastChecked: Date.now()
+          lastChecked: Date.now(),
+          docker: {
+            state: 'not_found',
+            image: 'clickhouse/clickhouse-server'
+          },
+          error: 'Container "clickhouse" not found'
         }
       ],
       components: {

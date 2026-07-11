@@ -68,6 +68,6 @@ describe('ProjectDetail', () => {
     )
     expect(screen.getByText('Project Dependencies')).toBeInTheDocument()
     expect(screen.getByText('postgres')).toBeInTheDocument()
-    expect(screen.getByText('unhealthy')).toBeInTheDocument()
+    expect(screen.getByText('Unhealthy')).toBeInTheDocument()
   })
 })

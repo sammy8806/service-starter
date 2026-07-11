@@ -93,6 +93,15 @@ export interface ResolvedProject {
 
 export type PortStatus = 'free' | 'in-use' | 'conflict'
 export type DependencyHealth = 'healthy' | 'unhealthy' | 'unknown'
+export type DockerContainerState = 'running' | 'stopped' | 'not_found' | 'unavailable'
+
+export interface DockerContainerInfo {
+  state: DockerContainerState
+  matchedName?: string
+  containerId?: string
+  image?: string
+  statusText?: string
+}
 export type ComponentStatus = 'running' | 'stopped' | 'warning'
 export type ProcessOrigin = 'managed' | 'external' | 'none'
 export type TrayIconState = 'grey' | 'green' | 'orange'
@@ -117,6 +126,7 @@ export interface DependencyState {
   health: DependencyHealth
   lastChecked: number
   error?: string
+  docker?: DockerContainerInfo
 }
 
 export interface ComponentState {

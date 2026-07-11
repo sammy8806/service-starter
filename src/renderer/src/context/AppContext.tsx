@@ -15,10 +15,18 @@ export interface DependencyStateView {
     type: string
     name?: string
     container?: string
+    image?: string
   }
   health: 'healthy' | 'unhealthy' | 'unknown'
   lastChecked: number
   error?: string
+  docker?: {
+    state: 'running' | 'stopped' | 'not_found' | 'unavailable'
+    matchedName?: string
+    containerId?: string
+    image?: string
+    statusText?: string
+  }
 }
 
 export interface ComponentStateView {

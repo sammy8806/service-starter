@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import type { AppStateView } from '../../context/AppContext'
 import { computeKpis } from '../../utils/dashboardStats'
+import { collectDockerDependencies, dependencyStatusLabel, dependencyStatusTone } from '../../utils/dependencyDisplay'
 import { KpiCard } from './ui/KpiCard'
 import { Section } from './ui/Section'
 import { StatusChip } from './ui/StatusChip'
@@ -44,10 +45,18 @@ function uniqueValues(values: string[]): string[] {
   return [...new Set(values)]
 }
 
+const DOCKER_TONE_CLASS = {
+  healthy: 'text-emerald-400',
+  unhealthy: 'text-red-400',
+  unknown: 'text-zinc-500',
+  warning: 'text-amber-400'
+} as const
+
 export function OverviewDetail({ state }: OverviewDetailProps): React.JSX.Element {
   const kpis = computeKpis(state)
   const portRows = buildPortRows(state)
   const [portFilter, setPortFilter] = useState('')
+  const dockerRows = useMemo(() => collectDockerDependencies(state), [state])
 
   const filteredRows = useMemo(() => {
     const q = portFilter.trim().toLowerCase()
@@ -91,6 +100,52 @@ export function OverviewDetail({ state }: OverviewDetailProps): React.JSX.Elemen
           />
           <KpiCard value={projectCount} label="Projects" />
         </div>
+
+        {dockerRows.length > 0 && (
+          <Section title="Docker Containers">
+            <div className="overflow-hidden rounded-lg border border-white/[0.06]">
+              <table className="w-full text-[13px]">
+                <thead className="bg-zinc-800/50 text-left text-[11px] uppercase tracking-wider text-zinc-500">
+                  <tr>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      Container
+                    </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      Project
+                    </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      Status
+                    </th>
+                    <th scope="col" className="px-4 py-2.5 font-medium">
+                      Detail
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/[0.04]">
+                  {dockerRows.map((row) => (
+                    <tr key={row.key} className="hover:bg-white/[0.02]">
+                      <td className="px-4 py-2.5 font-medium text-zinc-300">{row.container}</td>
+                      <td className="px-4 py-2.5 text-zinc-400">
+                        {row.project}
+                        {row.component ? ` / ${row.component}` : ''}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className={`text-[12px] font-medium ${DOCKER_TONE_CLASS[dependencyStatusTone(row.dep)]}`}
+                        >
+                          {dependencyStatusLabel(row.dep)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-[11px] text-zinc-500">
+                        {row.dep.docker?.statusText ?? row.dep.docker?.matchedName ?? row.dep.error ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
+        )}
 
         {state.conflicts.length > 0 && (
           <Section title="Port Conflicts" accent="warning">

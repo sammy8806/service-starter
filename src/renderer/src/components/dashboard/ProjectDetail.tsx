@@ -4,6 +4,7 @@ import { DetailHeader } from './ui/DetailHeader'
 import { Section } from './ui/Section'
 import { ActionButton } from './ui/ActionButton'
 import { EmptyState } from './ui/EmptyState'
+import { DependencyRow } from './DependencyRow'
 
 interface ProjectDetailProps {
   project: ProjectStateView
@@ -46,26 +47,9 @@ export function ProjectDetail({
         {project.dependencies.length > 0 && (
           <Section title="Project Dependencies">
             <div className="divide-y divide-white/[0.04] rounded-lg border border-white/[0.06]">
-              {project.dependencies.map((dep, i) => {
-                const name = dep.dependency.name ?? dep.dependency.container ?? 'unknown'
-                return (
-                  <div key={`${name}-${i}`} className="flex items-center gap-3 px-4 py-2.5 text-[13px]">
-                    <StatusBadge status={dep.health} size="md" />
-                    <span className="text-zinc-300">{name}</span>
-                    <span
-                      className={`ml-auto text-[12px] font-medium ${
-                        dep.health === 'healthy'
-                          ? 'text-emerald-400'
-                          : dep.health === 'unhealthy'
-                            ? 'text-red-400'
-                            : 'text-zinc-500'
-                      }`}
-                    >
-                      {dep.health}
-                    </span>
-                  </div>
-                )
-              })}
+              {project.dependencies.map((dep, i) => (
+                <DependencyRow key={`${dep.dependency.container ?? dep.dependency.name}-${i}`} dep={dep} />
+              ))}
             </div>
           </Section>
         )}
