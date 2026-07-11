@@ -29,7 +29,7 @@ describe('ProjectDetail', () => {
     expect(screen.getByRole('button', { name: /stop all/i })).toBeInTheDocument()
   })
 
-  it('selects a component when its row is clicked', () => {
+  it('selects a running component when its row is clicked', () => {
     const onSelectComponent = vi.fn()
     render(
       <ProjectDetail
@@ -43,11 +43,13 @@ describe('ProjectDetail', () => {
     expect(onSelectComponent).toHaveBeenCalledWith('backend')
   })
 
-  it('renders aggregate port chips for components that declare ports', () => {
+  it('shows only running components in the quick-open list', () => {
     render(
       <ProjectDetail project={project} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
     )
-    expect(screen.getByText(/:8090 api/)).toBeInTheDocument()
+    expect(screen.getByText('Running — open logs')).toBeInTheDocument()
+    expect(screen.getByText('backend')).toBeInTheDocument()
+    expect(screen.queryByText('web')).not.toBeInTheDocument()
   })
 
   it('renders the project-level dependency section with a health label', () => {
@@ -64,7 +66,7 @@ describe('ProjectDetail', () => {
     render(
       <ProjectDetail project={withDep} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
     )
-    expect(screen.getByText('Dependencies')).toBeInTheDocument()
+    expect(screen.getByText('Project Dependencies')).toBeInTheDocument()
     expect(screen.getByText('postgres')).toBeInTheDocument()
     expect(screen.getByText('unhealthy')).toBeInTheDocument()
   })

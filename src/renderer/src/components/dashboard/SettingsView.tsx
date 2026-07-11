@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
+import { Section } from './ui/Section'
+import { ActionButton } from './ui/ActionButton'
 
 interface SettingsForm {
   scanDirectories: string[]
@@ -29,15 +31,13 @@ function normalize(config: Partial<SettingsForm>): SettingsForm {
   }
 }
 
-const SELECT_CLASS =
-  'w-full px-3 py-2 bg-zinc-800 border border-white/[0.08] rounded-lg text-[13px] text-zinc-300 focus:outline-none focus:border-zinc-500 transition-colors'
+const INPUT_CLASS =
+  'w-full rounded-lg border border-white/[0.08] bg-zinc-800 px-3 py-2 text-[13px] text-zinc-300 transition-colors focus:border-zinc-500 focus:outline-none'
 
 export function SettingsView(): React.JSX.Element {
   const [settings, setSettings] = useState<SettingsForm>(DEFAULTS)
   const [saved, setSaved] = useState<SettingsForm | null>(null)
   const [savedFlash, setSavedFlash] = useState(false)
-  // Hold the full loaded config so keys this form doesn't manage (e.g. `editors`,
-  // `overrides`) are preserved on save instead of being silently dropped.
   const [rawConfig, setRawConfig] = useState<Record<string, unknown>>({})
   const savedFlashTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -78,155 +78,150 @@ export function SettingsView(): React.JSX.Element {
   }
 
   return (
-    <div className="p-6 max-w-2xl space-y-7 overflow-y-auto scrollbar-thin scrollbar-thumb-zinc-700">
-      <section>
-        <h3 className="text-[13px] font-medium text-zinc-200 mb-1">Scan Directories</h3>
-        <p className="text-[12px] text-zinc-500 mb-3">
-          Directories scanned for projects with a{' '}
-          <span className="font-mono text-zinc-400">.service-starter.yml</span> manifest.
-        </p>
-        <div className="space-y-1.5 mb-3">
-          {settings.scanDirectories.map((dir) => (
-            <div
-              key={dir}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800/50 border border-white/[0.06]"
-            >
-              <span className="flex-1 text-[13px] font-mono text-zinc-400 break-all">{dir}</span>
-              <button
-                onClick={() => removeDirectory(dir)}
-                className="text-zinc-600 hover:text-red-400 transition-colors"
-                aria-label={`Remove ${dir}`}
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <div className="shrink-0 border-b border-white/[0.06] px-6 py-4">
+        <h2 className="text-[15px] font-semibold text-zinc-100">Settings</h2>
+        <p className="mt-0.5 text-[12px] text-zinc-500">Scan paths, intervals, and external applications</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="mx-auto grid max-w-4xl gap-8">
+          <Section title="Scan Directories">
+            <p className="mb-3 text-[12px] text-zinc-500">
+              Directories scanned for projects with a{' '}
+              <span className="font-mono text-zinc-400">.service-starter.yml</span> manifest.
+            </p>
+            <div className="mb-3 space-y-1.5">
+              {settings.scanDirectories.map((dir) => (
+                <div
+                  key={dir}
+                  className="flex items-center gap-2 rounded-lg border border-white/[0.06] bg-zinc-800/50 px-3 py-2"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+                  <span className="flex-1 break-all font-mono text-[13px] text-zinc-400">{dir}</span>
+                  <button
+                    onClick={() => removeDirectory(dir)}
+                    className="text-zinc-600 transition-colors hover:text-red-400"
+                    aria-label={`Remove ${dir}`}
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+              {settings.scanDirectories.length === 0 && (
+                <p className="py-2 text-[12px] text-zinc-600">No directories configured yet.</p>
+              )}
             </div>
-          ))}
-        </div>
-        <button
-          onClick={addDirectory}
-          className="px-3 py-2 bg-zinc-700 hover:bg-zinc-600 text-[13px] text-zinc-200 rounded-lg transition-colors"
-        >
-          Add directory…
-        </button>
-      </section>
+            <ActionButton onClick={addDirectory}>Add directory…</ActionButton>
+          </Section>
 
-      <section>
-        <h3 className="text-[13px] font-medium text-zinc-200 mb-3">Scan Intervals</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="setting-scan-interval" className="text-[12px] text-zinc-500 block mb-1">
-              Project scan (ms)
-            </label>
-            <input
-              id="setting-scan-interval"
-              type="number"
-              value={settings.scanIntervalMs}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  scanIntervalMs: parseInt(e.target.value, 10) || DEFAULTS.scanIntervalMs
-                })
-              }
-              className={SELECT_CLASS + ' font-mono'}
-            />
-          </div>
-          <div>
-            <label
-              htmlFor="setting-port-scan-interval"
-              className="text-[12px] text-zinc-500 block mb-1"
-            >
-              Port scan (ms)
-            </label>
-            <input
-              id="setting-port-scan-interval"
-              type="number"
-              value={settings.portScanIntervalMs}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  portScanIntervalMs: parseInt(e.target.value, 10) || DEFAULTS.portScanIntervalMs
-                })
-              }
-              className={SELECT_CLASS + ' font-mono'}
-            />
-          </div>
-        </div>
-      </section>
+          <Section title="Scan Intervals">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label htmlFor="setting-scan-interval" className="mb-1 block text-[12px] text-zinc-500">
+                  Project scan (ms)
+                </label>
+                <input
+                  id="setting-scan-interval"
+                  type="number"
+                  value={settings.scanIntervalMs}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      scanIntervalMs: parseInt(e.target.value, 10) || DEFAULTS.scanIntervalMs
+                    })
+                  }
+                  className={`${INPUT_CLASS} font-mono`}
+                />
+              </div>
+              <div>
+                <label htmlFor="setting-port-scan-interval" className="mb-1 block text-[12px] text-zinc-500">
+                  Port scan (ms)
+                </label>
+                <input
+                  id="setting-port-scan-interval"
+                  type="number"
+                  value={settings.portScanIntervalMs}
+                  onChange={(e) =>
+                    setSettings({
+                      ...settings,
+                      portScanIntervalMs: parseInt(e.target.value, 10) || DEFAULTS.portScanIntervalMs
+                    })
+                  }
+                  className={`${INPUT_CLASS} font-mono`}
+                />
+              </div>
+            </div>
+          </Section>
 
-      <section>
-        <h3 className="text-[13px] font-medium text-zinc-200 mb-3">Applications</h3>
-        <div className="grid grid-cols-3 gap-4">
-          <div>
-            <label htmlFor="setting-editor" className="text-[12px] text-zinc-500 block mb-1">
-              Editor
-            </label>
-            <select
-              id="setting-editor"
-              value={settings.editor}
-              onChange={(e) => setSettings({ ...settings, editor: e.target.value })}
-              className={SELECT_CLASS}
-            >
-              <option value="code">VS Code</option>
-              <option value="cursor">Cursor</option>
-              <option value="zed">Zed</option>
-              <option value="idea">IntelliJ IDEA</option>
-              <option value="webstorm">WebStorm</option>
-              <option value="sublime">Sublime Text</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="setting-terminal" className="text-[12px] text-zinc-500 block mb-1">
-              Terminal
-            </label>
-            <select
-              id="setting-terminal"
-              value={settings.terminal}
-              onChange={(e) => setSettings({ ...settings, terminal: e.target.value })}
-              className={SELECT_CLASS}
-            >
-              <option value="default">Terminal.app</option>
-              <option value="iterm">iTerm2</option>
-              <option value="warp">Warp</option>
-              <option value="alacritty">Alacritty</option>
-              <option value="kitty">Kitty</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="setting-git-gui" className="text-[12px] text-zinc-500 block mb-1">
-              Git GUI
-            </label>
-            <select
-              id="setting-git-gui"
-              value={settings.gitGui}
-              onChange={(e) => setSettings({ ...settings, gitGui: e.target.value })}
-              className={SELECT_CLASS}
-            >
-              <option value="fork">Fork</option>
-              <option value="gitkraken">GitKraken</option>
-              <option value="sourcetree">Sourcetree</option>
-              <option value="github-desktop">GitHub Desktop</option>
-              <option value="tower">Tower</option>
-            </select>
-          </div>
+          <Section title="Applications">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <label htmlFor="setting-editor" className="mb-1 block text-[12px] text-zinc-500">
+                  Editor
+                </label>
+                <select
+                  id="setting-editor"
+                  value={settings.editor}
+                  onChange={(e) => setSettings({ ...settings, editor: e.target.value })}
+                  className={INPUT_CLASS}
+                >
+                  <option value="code">VS Code</option>
+                  <option value="cursor">Cursor</option>
+                  <option value="zed">Zed</option>
+                  <option value="idea">IntelliJ IDEA</option>
+                  <option value="webstorm">WebStorm</option>
+                  <option value="sublime">Sublime Text</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="setting-terminal" className="mb-1 block text-[12px] text-zinc-500">
+                  Terminal
+                </label>
+                <select
+                  id="setting-terminal"
+                  value={settings.terminal}
+                  onChange={(e) => setSettings({ ...settings, terminal: e.target.value })}
+                  className={INPUT_CLASS}
+                >
+                  <option value="default">Terminal.app</option>
+                  <option value="iterm">iTerm2</option>
+                  <option value="warp">Warp</option>
+                  <option value="alacritty">Alacritty</option>
+                  <option value="kitty">Kitty</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="setting-git-gui" className="mb-1 block text-[12px] text-zinc-500">
+                  Git GUI
+                </label>
+                <select
+                  id="setting-git-gui"
+                  value={settings.gitGui}
+                  onChange={(e) => setSettings({ ...settings, gitGui: e.target.value })}
+                  className={INPUT_CLASS}
+                >
+                  <option value="fork">Fork</option>
+                  <option value="gitkraken">GitKraken</option>
+                  <option value="sourcetree">Sourcetree</option>
+                  <option value="github-desktop">GitHub Desktop</option>
+                  <option value="tower">Tower</option>
+                </select>
+              </div>
+            </div>
+          </Section>
         </div>
-      </section>
+      </div>
 
-      <div className="flex items-center gap-3 pt-1">
+      <div className="flex shrink-0 items-center gap-3 border-t border-white/[0.06] px-6 py-3">
         <button
           onClick={handleSave}
           disabled={!dirty}
-          className={`px-4 py-2 rounded-lg text-[13px] font-medium transition-all ${
+          className={`rounded-lg px-4 py-2 text-[13px] font-medium transition-all ${
             dirty
               ? 'bg-zinc-100 text-zinc-900 hover:bg-white'
-              : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'
+              : 'cursor-not-allowed bg-zinc-800 text-zinc-600'
           }`}
         >
           Save Settings

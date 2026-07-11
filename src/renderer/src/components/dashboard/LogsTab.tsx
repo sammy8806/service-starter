@@ -98,9 +98,9 @@ export function LogsTab({
 
   if (processOrigin === 'external' && serviceLogChecked && !hasReadableServiceLog) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
+      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
         <p className="text-[13px] text-zinc-400">No logs — external process</p>
-        <p className="text-[12px] text-zinc-600 mt-1 max-w-xs">
+        <p className="mt-1 max-w-xs text-[12px] text-zinc-600">
           Logs are only captured for services started by Service Starter.
         </p>
       </div>
