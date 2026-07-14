@@ -4,6 +4,8 @@ import { mkdirSync, writeFileSync, readFileSync, existsSync, openSync, closeSync
 import { join } from 'path'
 import { ManagedProcess, ProcessStateFile } from './types'
 import { scanActivePorts } from '../monitoring/port-scanner'
+import { PortDeclaration } from '../config/types'
+import { resolvePortTemplate } from '../config/port-template'
 
 interface StartComponentOptions {
   projectName: string
@@ -12,6 +14,7 @@ interface StartComponentOptions {
   workDir: string
   projectDir: string
   declaredPorts?: number[]
+  ports?: PortDeclaration[]
   env?: Record<string, string>
 }
 
@@ -30,9 +33,7 @@ export class ProcessManager extends EventEmitter {
   // key: "projectName:componentName" -> projectDir (for state file writes)
   private projectDirs = new Map<string, string>()
 
-  constructor(
-    private readonly portScanner: typeof scanActivePorts = scanActivePorts
-  ) {
+  constructor(private readonly portScanner: typeof scanActivePorts = scanActivePorts) {
     super()
   }
 
@@ -82,13 +83,33 @@ export class ProcessManager extends EventEmitter {
     // Open log file for writing (truncate)
     const logFd = openSync(logFile, 'w')
 
-    // Parse command
-    const parts = opts.startCommand.split(/\s+/)
+    // Resolve ${port} templates against the component's resolved ports (fail closed)
+    const ports = opts.ports ?? []
+    const commandResult = resolvePortTemplate(opts.startCommand, ports)
+    if (commandResult.error) {
+      closeSync(logFd)
+      throw new Error(
+        `Cannot start ${opts.projectName}/${opts.componentName}: ${commandResult.error}`
+      )
+    }
+
+    const resolvedEnv: Record<string, string> = {}
+    for (const [envKey, envValue] of Object.entries(opts.env ?? {})) {
+      const result = resolvePortTemplate(envValue, ports)
+      if (result.error) {
+        closeSync(logFd)
+        throw new Error(`Cannot start ${opts.projectName}/${opts.componentName}: ${result.error}`)
+      }
+      resolvedEnv[envKey] = result.resolved
+    }
+
+    // Parse resolved command
+    const parts = commandResult.resolved.split(/\s+/)
     const cmd = parts[0]
     const args = parts.slice(1)
 
     // Merge env
-    const env = { ...process.env, ...opts.env }
+    const env = { ...process.env, ...resolvedEnv }
 
     // Spawn detached
     const child = spawn(cmd, args, {
@@ -243,10 +264,11 @@ export class ProcessManager extends EventEmitter {
   }
 
   private async assertPortsAvailable(opts: StartComponentOptions): Promise<void> {
-    if (!opts.declaredPorts?.length) return
+    const declaredPorts = opts.declaredPorts ?? opts.ports?.map((port) => port.port) ?? []
+    if (!declaredPorts.length) return
 
     const activePorts = await this.portScanner()
-    const conflicts = activePorts.filter((active) => opts.declaredPorts!.includes(active.port))
+    const conflicts = activePorts.filter((active) => declaredPorts.includes(active.port))
 
     if (conflicts.length === 0) return
 
