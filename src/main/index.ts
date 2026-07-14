@@ -22,6 +22,7 @@ if (process.platform === 'darwin') {
 }
 
 import { loadCentralConfig, saveCentralConfig } from './config/central-config'
+import { reassignPort } from './config/reassign-port'
 import { resolveEnvVars } from './config/env-resolver'
 import { loadFavorites, saveFavorites, toggleFavorite as toggleFav, isFavorite } from './config/favorites'
 import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState } from './config/types'
@@ -262,6 +263,7 @@ app.whenReady().then(() => {
             workDir: comp.workDir ? join(dir, comp.workDir) : dir,
             projectDir: dir,
             declaredPorts: comp.ports.map((port) => port.port),
+            ports: comp.ports,
             env: comp.env
           })
         }
@@ -296,6 +298,30 @@ app.whenReady().then(() => {
       saveCentralConfig(config)
       projectRegistry.updateConfig(config)
     },
+    reassignPort: (projectName, componentName, portLabel, fromPort, newPort) => {
+      const result = reassignPort(
+        {
+          getProjects: () => projectRegistry.getProjects(),
+          getConfig: () => centralConfig,
+          applyConfig: (config) => {
+            saveCentralConfig(config)
+            centralConfig = config
+            projectRegistry.updateConfig(config)
+          },
+          isPortActive: (port) =>
+            portMonitor.getState().activePorts.some((activePort) => activePort.port === port),
+          isManagedRunning: (project, component) =>
+            processManager.isManagedRunning(project, component)
+        },
+        projectName,
+        componentName,
+        portLabel,
+        fromPort,
+        newPort
+      )
+      if (result.ok) pushState()
+      return result
+    },
     openTerminal: (workDir: string) => openInTerminal(workDir, centralConfig.terminal),
     openEditor: (codeDir: string, editor?: string) =>
       openInEditor(codeDir, editor ?? centralConfig.editor, centralConfig.editors),
@@ -319,6 +345,7 @@ app.whenReady().then(() => {
                 workDir: comp.workDir ? join(dir, comp.workDir) : dir,
                 projectDir: dir,
                 declaredPorts: comp.ports.map((port) => port.port),
+                ports: comp.ports,
                 env: comp.env
               })
             )
