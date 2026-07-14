@@ -20,6 +20,113 @@
 
 ---
 
+## Visual Design Reference (Skin A — "refined dark")
+
+This is the authoritative look. Component code blocks below already encode it;
+this section explains the *intent* so an implementer can fill gaps and verify by
+eye. The rule of Skin A: **state is carried by the 2px left accent bar and the
+port-number color — never by badge-pills.** Hairline separators, proportional
+type, generous row height. It must sit flush with the existing Settings/tray
+chrome, so it uses the app's established Tailwind tokens (below), not a new
+palette.
+
+### Color tokens (use these exact Tailwind classes)
+
+| Purpose | Class | Notes |
+|---|---|---|
+| Page background | `bg-zinc-900` | inherited from `DashboardWindow` |
+| Hairline separator | `border-white/[0.06]` (headers), `border-white/[0.04]` (rows) | never a solid grey |
+| Row hover | `hover:bg-white/[0.02]` | whole-row, subtle |
+| Primary text | `text-zinc-100` / `text-zinc-300` | names, values |
+| Secondary text | `text-zinc-500` | labels, summary |
+| Faint text | `text-zinc-600` | port labels, hints, `blocked` |
+| Running / holder accent | `text-emerald-400`, `before:bg-emerald-400`, tint `bg-emerald-400/[0.04]` | |
+| Contested accent | `text-amber-400`, `before:bg-amber-400`, tint `bg-amber-400/[0.04]` | |
+| Held bar (holder+blocked) | `before:bg-gradient-to-b before:from-emerald-400 before:to-amber-400` | green top → amber bottom |
+| Error text | `text-red-400` | picker failures |
+| Primary button | `bg-zinc-200 text-zinc-900 font-semibold` | Run, Apply |
+| Ghost/outline button | `border border-white/[0.12] text-zinc-300 hover:border-white/25` | Stop, Cancel |
+| Reassign button | `border border-amber-500/40 text-amber-400 hover:border-amber-400` | persistent on contested/held |
+
+### Row anatomy (Ports section)
+
+- Row wrapper is `relative` with a `group` class and a `::before` pseudo-element
+  for the accent bar: `before:absolute before:inset-y-0 before:left-0 before:w-0.5`.
+  The bar color comes from the state (`accent` variable). Idle → transparent bar.
+- Optional whole-row background tint per state (`rowTint`): running →
+  `bg-emerald-400/[0.04]`, contested/held → `bg-amber-400/[0.04]`, idle → none.
+  This is the flat-Tailwind stand-in for the mockup's left-to-right gradient wash;
+  do not attempt the gradient — the flat tint reads the same at this size.
+- Inner flex: `min-h-[46px] items-center gap-3 pl-5 pr-5`.
+- **Port number column**: `w-16 font-mono text-[16px] font-medium tabular-nums`,
+  colored by state (`portColor`): running → emerald-400, contested/held → amber-400,
+  idle → zinc-500. This is the single loudest state signal; keep it 16px.
+- **Single-claimant rows** (idle/running): name `text-[13px] text-zinc-300` with the
+  project prefix in `text-zinc-500` (`bandai /` dimmer than the component); the port
+  label right-aligned in `text-[11px] text-zinc-600`; then the action button.
+- **Run button reveals on hover** — `opacity-0 transition-opacity group-hover:opacity-100`
+  — so idle rows are calm at rest. Stop (running) is always visible (ghost outline).
+- **Multi-claimant rows** (contested/held): replace the single-line middle with a
+  vertical stack (`flex-1 flex-col gap-1 py-2`), one line per claimant at
+  `text-[12.5px]`. Holder line is `text-emerald-400` with a right-aligned
+  `holding · pid NNNNN` in `text-zinc-600`; blocked lines are `text-zinc-400` with a
+  right-aligned `blocked` in `text-zinc-600`. The `Reassign` button is vertically
+  centered and persistent.
+
+### Inline reassign picker
+
+- Panel: attached under the row, `border-t border-amber-500/20 bg-zinc-800/40
+  px-5 py-3 pl-[84px]` (the `pl-[84px]` aligns the panel body under the name column,
+  past the port number).
+- Prompt: `text-[11px] uppercase tracking-wider text-zinc-500` — e.g. "Which one
+  moves off :5173?".
+- Claimant options: full-width left-aligned buttons, `rounded-md px-2 py-1.5
+  text-[12.5px]`. Selected → `bg-amber-400/10 text-zinc-100`; unselected →
+  `text-zinc-400 hover:bg-white/[0.03]`. Leading faux-radio: a `h-3 w-3 rounded-full`
+  with `border-zinc-600`, and when selected `border-4 border-amber-400`. The holder
+  option is `disabled` with `disabled:opacity-40` and a trailing `holding — stop first`.
+- Destination row: label "move to" (`text-[11px] text-zinc-500`), a port `<input>`
+  (`w-20 rounded-md border border-white/[0.12] bg-zinc-900 px-2 py-1 font-mono
+  text-[13px] text-amber-400`, `aria-label="New port"`), then the hint "saved as an
+  override, manifest untouched" (`text-[11px] text-zinc-600`), then Cancel (ghost) and
+  Apply (primary) pushed right with `ml-auto`.
+- Error line: `mt-2 text-[12px] text-red-400`, shown only on a failed result; the
+  panel stays open.
+
+### Header (`PatchbayHeader`)
+
+- Container matches the old header box: `shrink-0 border-b border-white/[0.06]
+  px-5 py-4`.
+- Title `localhost` — `text-[15px] font-semibold text-zinc-100`. Summary on the same
+  baseline (`flex items-baseline gap-3`), `text-[12px] text-zinc-500`, with the
+  running count in `text-emerald-400` and the contested count in `text-amber-400`
+  only when `> 0`.
+- Filter pills right-aligned (`ml-auto`): `rounded-full px-2.5 py-1 text-[11px]
+  capitalize`; active pill `bg-white/[0.08] text-zinc-200`, inactive
+  `text-zinc-500 hover:text-zinc-300`.
+
+### Section labels & containers
+
+- The `Ports` / `Containers` group labels: `px-5 pt-4 pb-1 text-[10px] font-semibold
+  uppercase tracking-[0.11em] text-zinc-600`.
+- Containers reuse the existing `DockerContainersSection` (table styling) to keep
+  scope tight — this is acceptable per the spec. **Higher-fidelity option (only if
+  time allows):** a `ContainerRow` mirroring the port-row grammar — leading glyph in
+  the port column slot (`▲` emerald for running, `▼` red for exited, `·` zinc-600 for
+  absent), monospace container name at `text-[12.5px]`, status text in the state
+  color, image right-aligned `font-mono text-[11px] text-zinc-600`, and a Start/Stop/—
+  action using the same button tokens. If you build it, dim absent rows with
+  `opacity-55`.
+
+### Typography scale (quick reference)
+
+- Port number: 16px / medium / mono / tabular-nums
+- Names: 13px (single), 12.5px (forked claimants)
+- Labels, hints, summary: 11–12px
+- Section labels: 10px uppercase, tracking-[0.11em]
+
+---
+
 ## File map
 
 **Part A — Port templating (main)**
@@ -1139,6 +1246,8 @@ git commit -m "feat(dashboard): add patchbay header"
 
 Behaviour: `idle`→`Run`; `running`→`Stop`; `contested`/`held`→forked claimant lines + `Reassign`. The picker lets the user pick a **non-holder** claimant (holders are disabled), prefills `nextAvailablePort(allRows, row.port)`, and on Apply calls `onReassign`; a failing result keeps the picker open and shows `message`; success closes it.
 
+**Styling: follow the Visual Design Reference (Skin A) exactly** — the accent-bar/port-color state encoding, per-state row tint, hover-reveal `Run`, and the picker layout are all specified there and encoded in the code block below. Do not add badge-pills.
+
 - [ ] **Step 1: Write the failing test**
 
 ```tsx
@@ -1255,6 +1364,12 @@ export function PortRow({ row, allRows, onRun, onStop, onReassign }: PortRowProp
           : 'before:bg-transparent'
   const portColor =
     row.kind === 'running' ? 'text-emerald-400' : row.kind === 'contested' ? 'text-amber-400' : 'text-zinc-500'
+  const rowTint =
+    row.kind === 'running'
+      ? 'bg-emerald-400/[0.04]'
+      : row.kind === 'contested' || row.kind === 'held'
+        ? 'bg-amber-400/[0.04]'
+        : ''
 
   async function apply(): Promise<void> {
     const claimant = row.claimants.find((c) => claimantId(c) === selectedId)
@@ -1274,7 +1389,7 @@ export function PortRow({ row, allRows, onRun, onStop, onReassign }: PortRowProp
   const single = row.claimants.length === 1 ? row.claimants[0] : undefined
 
   return (
-    <div className={`relative border-b border-white/[0.04] before:absolute before:inset-y-0 before:left-0 before:w-0.5 ${accent}`}>
+    <div className={`group relative border-b border-white/[0.04] transition-colors hover:bg-white/[0.02] before:absolute before:inset-y-0 before:left-0 before:w-0.5 ${accent} ${rowTint}`}>
       <div className="flex min-h-[46px] items-center gap-3 pl-5 pr-5">
         <span className={`w-16 font-mono text-[16px] font-medium tabular-nums ${portColor}`}>{row.port}</span>
 
@@ -1294,7 +1409,7 @@ export function PortRow({ row, allRows, onRun, onStop, onReassign }: PortRowProp
             ) : (
               <button
                 onClick={() => onRun(single.projectName, single.componentName)}
-                className="rounded-md bg-zinc-200 px-2.5 py-1 text-[11px] font-semibold text-zinc-900"
+                className="rounded-md bg-zinc-200 px-2.5 py-1 text-[11px] font-semibold text-zinc-900 opacity-0 transition-opacity group-hover:opacity-100"
               >
                 Run
               </button>
@@ -1580,9 +1695,21 @@ git rm src/renderer/src/utils/dashboardStats.ts src/renderer/src/utils/dashboard
 Run: `npx vitest run && npm run typecheck && npm run lint`
 Expected: all green.
 
-- [ ] **Step 4: Drive the real app once**
+- [ ] **Step 4: Drive the real app once — behaviour + styling**
 
-Run: `npm run dev`, open the dashboard, confirm: contested `:5173`/`:8090` render as forked rows; the held row shows `holding · pid …` on the running claimant and `blocked` on the other; Reassign opens the picker, disables the holder, and Apply on a templated non-holder heals the row; Apply on a non-templated component shows the `missing-template` error inline.
+Run: `npm run dev`, open the dashboard, confirm behaviour: contested `:5173`/`:8090`
+render as forked rows; the held row shows `holding · pid …` on the running claimant
+and `blocked` on the other; Reassign opens the picker, disables the holder, and Apply
+on a templated non-holder heals the row; Apply on a non-templated component shows the
+`missing-template` error inline.
+
+Then confirm the **Skin A styling** against the Visual Design Reference: the 2px left
+accent bar is green on running rows, amber on contested, and a green→amber gradient on
+the held row; the port number is 16px mono and colored to match; running/contested
+rows carry the faint background tint; the `Run` button is hidden until row hover while
+`Stop`/`Reassign` stay visible; the picker aligns its body under the name column
+(`pl-[84px]`), the selected claimant shows the amber filled radio, and the holder option
+is greyed with "holding — stop first". No badge-pills anywhere.
 
 - [ ] **Step 5: Commit**
 
