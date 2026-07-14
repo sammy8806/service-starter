@@ -88,6 +88,29 @@ export interface DockerSnapshotView {
   missing: DockerMissingView[]
 }
 
+export interface ReassignResultView {
+  ok: boolean
+  code?: string
+  message?: string
+  suggestedPort?: number
+}
+
+type ContextMenuTypeView =
+  | 'running-service'
+  | 'idle-service'
+  | 'conflict-service'
+  | 'active-project'
+  | 'idle-project'
+  | 'footer'
+
+interface ContextMenuPayloadView {
+  projectName: string
+  projectDir?: string
+  componentName?: string
+  port?: number
+  pid?: number
+}
+
 const DEFAULT_STATE: AppStateView = {
   projects: {},
   trayIcon: 'grey',
@@ -107,6 +130,13 @@ interface AppContextType {
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
   startProject: (projectName: string) => Promise<boolean>
   stopProject: (projectName: string) => Promise<boolean>
+  reassignPort: (
+    projectName: string,
+    componentName: string,
+    portLabel: string,
+    fromPort: number,
+    newPort: number
+  ) => Promise<ReassignResultView>
   toggleFavorite: (projectName: string) => Promise<string[]>
   restartComponent: (projectName: string, componentName: string) => Promise<boolean>
   copyToClipboard: (text: string) => void
@@ -114,7 +144,7 @@ interface AppContextType {
   showProcessInfo: (pid: number) => void
   stopAllManaged: () => Promise<boolean>
   tailLogs: (projectName: string, componentName: string) => void
-  showContextMenu: (type: string, payload: unknown) => void
+  showContextMenu: (type: ContextMenuTypeView, payload: ContextMenuPayloadView) => void
 }
 
 const AppContext = createContext<AppContextType>({
@@ -126,8 +156,9 @@ const AppContext = createContext<AppContextType>({
   openDashboard: () => {},
   startComponent: async () => {},
   stopComponent: async () => false,
-  startProject: async () => {},
-  stopProject: async () => {},
+  startProject: async () => false,
+  stopProject: async () => false,
+  reassignPort: async () => ({ ok: false }),
   toggleFavorite: async () => [],
   restartComponent: async () => false,
   copyToClipboard: () => {},
@@ -162,6 +193,8 @@ export function AppProvider({ children }: { children: ReactNode }): React.JSX.El
     stopComponent: (projectName, componentName) => window.api.stopComponent(projectName, componentName),
     startProject: (projectName) => window.api.startProject(projectName),
     stopProject: (projectName) => window.api.stopProject(projectName),
+    reassignPort: (projectName, componentName, portLabel, fromPort, newPort) =>
+      window.api.reassignPort(projectName, componentName, portLabel, fromPort, newPort),
     toggleFavorite: (projectName) => window.api.toggleFavorite(projectName),
     restartComponent: (projectName, componentName) =>
       window.api.restartComponent(projectName, componentName),

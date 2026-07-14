@@ -25,6 +25,7 @@ export const IPC_CHANNELS = {
   STOP_COMPONENT: 'process:stop-component',
   START_PROJECT: 'process:start-project',
   STOP_PROJECT: 'process:stop-project',
+  REASSIGN_PORT: 'config:reassign-port',
 
   // Log streaming
   LOG_GET: 'log:get',

@@ -39,6 +39,13 @@ export interface ServiceStarterAPI {
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
   startProject: (projectName: string) => Promise<boolean>
   stopProject: (projectName: string) => Promise<boolean>
+  reassignPort: (
+    projectName: string,
+    componentName: string,
+    portLabel: string,
+    fromPort: number,
+    newPort: number
+  ) => Promise<{ ok: boolean; code?: string; message?: string; suggestedPort?: number }>
   getLog: (projectName: string, componentName: string) => Promise<string>
   startLogTail: (projectName: string, componentName: string, startOffset?: number) => void
   stopLogTail: (projectName: string, componentName: string) => void

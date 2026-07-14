@@ -29,6 +29,21 @@ const api = {
     ipcRenderer.invoke('process:start-project', projectName),
   stopProject: (projectName: string) =>
     ipcRenderer.invoke('process:stop-project', projectName),
+  reassignPort: (
+    projectName: string,
+    componentName: string,
+    portLabel: string,
+    fromPort: number,
+    newPort: number
+  ) =>
+    ipcRenderer.invoke(
+      'config:reassign-port',
+      projectName,
+      componentName,
+      portLabel,
+      fromPort,
+      newPort
+    ),
 
   // Log streaming
   getLog: (projectName: string, componentName: string) =>

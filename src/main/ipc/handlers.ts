@@ -1,6 +1,7 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { IPC_CHANNELS } from './channels'
 import { AppState, CentralConfig } from '../config/types'
+import type { ReassignResult } from '../config/reassign-port'
 
 interface HandlerDependencies {
   getState: () => AppState
@@ -15,6 +16,13 @@ interface HandlerDependencies {
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
   startProject: (projectName: string) => Promise<void>
   stopProject: (projectName: string) => Promise<void>
+  reassignPort: (
+    projectName: string,
+    componentName: string,
+    portLabel: string,
+    fromPort: number,
+    newPort: number
+  ) => ReassignResult
   getLog: (projectName: string, componentName: string) => string
   startLogTail: (projectName: string, componentName: string, startOffset?: number) => void
   stopLogTail: (projectName: string, componentName: string) => void
@@ -102,6 +110,18 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
     await deps.stopProject(projectName)
     return true
   })
+
+  ipcMain.handle(
+    IPC_CHANNELS.REASSIGN_PORT,
+    (
+      _event,
+      projectName: string,
+      componentName: string,
+      portLabel: string,
+      fromPort: number,
+      newPort: number
+    ) => deps.reassignPort(projectName, componentName, portLabel, fromPort, newPort)
+  )
 
   // Log streaming
   ipcMain.handle(IPC_CHANNELS.LOG_GET, (_event, projectName: string, componentName: string) => {
