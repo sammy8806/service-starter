@@ -2,8 +2,16 @@
 
 Status: approved design, ready for implementation planning
 Date: 2026-07-15
-Scope: the Overview page of the dashboard window (`OverviewDetail.tsx`) plus a
-small central-config write path for reassigning ports.
+Scope: two parts —
+1. **Overview UI** — the patchbay redesign of the dashboard's Overview page
+   (`OverviewDetail.tsx`).
+2. **Port templating** — a spawn-time mechanism that injects a component's
+   resolved (override-aware) port into the process it starts, so that
+   reassigning a port actually moves the bound port instead of only changing
+   what service-starter displays. Without part 2, Reassign is cosmetic.
+
+These can be sequenced as two implementation plans; part 1 delivers value
+(the held/blocked clarity) even before part 2 lands.
 
 ## Problem
 
@@ -78,28 +86,74 @@ main-process state:
   ("12 services · 2 running · 3 contested · 1 container up") carries the counts
   that the tiles used to.
 
-## Reassign (inline picker)
+## Port templating (part 2 — what makes Reassign real)
+
+### The problem this solves
+
+Today the manifest port is **descriptive, not prescriptive**. `startComponent`
+(`process-manager.ts`) spawns `startCommand` split on whitespace, with env
+`{ ...process.env, ...comp.env }`. `declaredPorts` is passed only for
+conflict-detection (`process-manager.ts:246`) and is never injected. The spawn
+path resolves nothing — `resolveEnvVars` runs only for the Env-tab display
+(`index.ts:390`). So the real bound port is whatever the component's own tooling
+decides (Vite config, `server.port`, uvicorn `--port`), and writing a port
+override changes only service-starter's model. A Reassign built on the override
+alone would turn the row green while the real conflict persisted — a false green.
+
+### The mechanism (chosen approach: template the startCommand)
+
+Introduce a `${port}` placeholder that the manifest author wires into the command
+and/or env, tool-agnostically:
+
+```yaml
+startCommand: "vite --port ${port}"          # or
+startCommand: "uvicorn app:app --port ${port}"
+startCommand: "./mvnw spring-boot:run -Dspring-boot.run.arguments=--server.port=${port}"
+env:
+  PORT: "${port}"
+```
+
+- Syntax: `${port}` resolves to the component's **first declared port**.
+  `${port.<label>}` resolves a specific port by its declaration label, for
+  multi-port components.
+- Resolution happens **at spawn**, on both `startCommand` and `env` values,
+  against the component's *resolved* ports (which already have overrides applied
+  by `mergeConfig`). This closes the loop: override → `mergeConfig` → resolved
+  `comp.ports` → `${port}` substitution → real bound port.
+- Extend `resolveEnvVars` (or a sibling) to take a context map so `${port}` /
+  `${port.<label>}` bindings resolve alongside `${ENV_VAR}`. Apply the same
+  substitution to `startCommand` before splitting it in the process manager.
+- **Latent gap noted, not owned here:** the spawn path currently doesn't run
+  `resolveEnvVars` on env at all, so `${ENV_VAR}` in env values reaches the
+  child literally. Folding port context into the spawn-time resolver is a natural
+  moment to fix this, but if it risks scope creep it can be a follow-up — the
+  port work only strictly needs `${port}` substitution.
+
+## Reassign (inline picker — part 1 UI, made honest by part 2)
 
 Chosen behaviour: **small inline picker**, expanding the contested/held row.
 
-1. Click `Reassign` → the row expands to show: "Which one moves off :5173?"
-   with a radio list of the port's claimants (the currently-declared owner is
+1. Click `Reassign` → the row expands: "Which one moves off :5173?" with a
+   radio list of the port's claimants (the currently-declared owner is
    selectable but not forced), a port input prefilled with the **next free
    port**, and Apply / Cancel.
 2. "Next free port" = lowest port ≥ the current one not present in the set of
    all declared/observed ports.
 3. Apply writes a central-config override, **not** the project manifest:
-   `overrides[project].components[component].ports = [{ port: newPort, label }]`.
-   This uses the existing `getConfig` → mutate → `saveConfig` IPC path;
-   `mergeConfig` already applies `overrides[...].components[...].ports`, so the
-   registry re-resolves and the row heals on the next state push.
-4. The picker notes "saved as an override, manifest untouched" so the user
-   understands where the change lives.
+   `overrides[project].components[component].ports = [{ port: newPort, label }]`,
+   via the existing `getConfig` → mutate → `saveConfig` IPC path. `mergeConfig`
+   re-resolves and the row heals on the next state push.
+4. **Honesty guard:** before/after Apply, check whether the moved component's
+   `startCommand` or `env` actually references `${port}`/`${port.<label>}`. If it
+   does not, the picker shows a warning that the override won't move the real
+   bound port until the command is templated (links to the templating docs).
+   This prevents the false green when part 2's templating isn't wired for that
+   component.
+5. The picker notes "saved as an override, manifest untouched" so the user knows
+   where the change lives.
 
-No new backend feature is required for reassign beyond the config write — the
-override plumbing already exists (`ComponentOverride.ports`, `mergeConfig`).
-`Create` on an absent container is out of scope for this change unless a create
-path already exists; if not, that row shows no action button.
+`Create` on an absent container is out of scope unless a create path already
+exists; if not, that row shows no action button.
 
 ## Component structure
 
@@ -127,6 +181,13 @@ by Overview are left in place only if other views consume them; otherwise remove
 - Update/replace `OverviewDetail.test.tsx` for the new structure and empty state.
 - Update the screenshot fixtures (`src/renderer/src/screenshots/fixtures.ts`) so
   the preview covers a held-and-blocked port.
+- **Port templating**: `${port}` and `${port.<label>}` substitution in
+  `startCommand` and env values; first-port default; unknown label; a command
+  with no placeholder passes through unchanged; multi-port component resolves
+  each label correctly. An integration-level check that a reassigned override
+  flows through `mergeConfig` into the resolved command string.
+- **Honesty guard**: picker warns when the moved component's command/env has no
+  `${port}` reference; stays silent when it does.
 
 ## Out of scope
 
