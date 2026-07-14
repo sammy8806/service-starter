@@ -57,7 +57,8 @@ function renderDashboard(): void {
 describe('DashboardWindow', () => {
   it('defaults to the Overview detail', async () => {
     renderDashboard()
-    await waitFor(() => expect(screen.getByText('Port Map')).toBeInTheDocument())
+    await waitFor(() => expect(screen.getByText('localhost')).toBeInTheDocument())
+    expect(screen.getByText('Ports')).toBeInTheDocument()
   })
 
   it('navigates to Settings via the top nav', async () => {

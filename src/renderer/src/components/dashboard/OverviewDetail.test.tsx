@@ -1,24 +1,58 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import { OverviewDetail } from './OverviewDetail'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 import type { AppStateView } from '../../context/AppContext'
+import { OverviewDetail } from './OverviewDetail'
+
+vi.mock('../../context/AppContext', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../context/AppContext')>()
+  return {
+    ...actual,
+    useAppState: () => ({
+      startComponent: vi.fn(),
+      stopComponent: vi.fn(),
+      reassignPort: vi.fn().mockResolvedValue({ ok: true })
+    })
+  }
+})
 
 const state: AppStateView = {
-  trayIcon: 'green',
+  trayIcon: 'orange',
   favorites: [],
-  conflicts: [{ port: 3000, type: 'static', claimants: ['shop/web', 'blog/web'] }],
+  conflicts: [
+    {
+      port: 8090,
+      type: 'static',
+      claimants: ['bandai/backend', 'fmh/ocr'],
+      activePid: 51002,
+      activeProcess: 'java'
+    }
+  ],
   projects: {
-    shop: {
-      name: 'shop',
-      directory: '/shop',
+    bandai: {
+      name: 'bandai',
+      directory: '/b',
       dependencies: [],
       components: {
-        web: {
-          name: 'web',
+        backend: {
+          name: 'backend',
           status: 'running',
           processOrigin: 'managed',
           dependencies: [],
-          ports: [{ port: 3000, label: 'web', status: 'conflict', process: 'node', pid: 4821 }]
+          ports: [{ port: 8090, label: 'http', status: 'in-use', pid: 51002, process: 'java' }]
+        }
+      }
+    },
+    fmh: {
+      name: 'fmh',
+      directory: '/f',
+      dependencies: [],
+      components: {
+        ocr: {
+          name: 'ocr',
+          status: 'stopped',
+          processOrigin: 'none',
+          dependencies: [],
+          ports: [{ port: 8090, label: 'http', status: 'conflict' }]
         }
       }
     }
@@ -26,38 +60,59 @@ const state: AppStateView = {
   docker: { available: true, containers: [], missing: [] }
 }
 
-describe('OverviewDetail', () => {
-  it('shows KPI counts', () => {
+describe('OverviewDetail (patchbay)', () => {
+  it('renders the summary header', () => {
     render(<OverviewDetail state={state} />)
-    expect(screen.getByText('Running')).toBeInTheDocument()
-    expect(screen.getByText('Conflicts')).toBeInTheDocument()
-    expect(screen.getAllByText('1').length).toBeGreaterThanOrEqual(2)
+    expect(screen.getByText('localhost')).toBeInTheDocument()
+    expect(screen.getByText(/1 contested/)).toBeInTheDocument()
   })
 
-  it('lists conflicts and the global port map row', () => {
+  it('renders the held and blocked port once', () => {
     render(<OverviewDetail state={state} />)
-    // :3000 appears in both the conflicts section and the port map table row
-    expect(screen.getAllByText(/:3000/)).toHaveLength(2)
-    expect(screen.getByText('shop')).toBeInTheDocument()
+    expect(screen.getAllByText('8090')).toHaveLength(1)
+    expect(screen.getByText(/holding/)).toBeInTheDocument()
+    expect(screen.getByText('blocked')).toBeInTheDocument()
   })
 
-  it('renders duplicate conflict claimants once in the summary', () => {
+  it('filters ports client-side', () => {
+    const withIdlePort: AppStateView = {
+      ...state,
+      projects: {
+        ...state.projects,
+        docs: {
+          name: 'docs',
+          directory: '/docs',
+          dependencies: [],
+          components: {
+            site: {
+              name: 'site',
+              status: 'stopped',
+              processOrigin: 'none',
+              dependencies: [],
+              ports: [{ port: 3000, label: 'web', status: 'free' }]
+            }
+          }
+        }
+      }
+    }
+    render(<OverviewDetail state={withIdlePort} />)
+    expect(screen.getByText('3000')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'contested' }))
+    expect(screen.queryByText('3000')).not.toBeInTheDocument()
+    expect(screen.getByText('8090')).toBeInTheDocument()
+  })
+
+  it('shows the empty state when there is nothing to show', () => {
     render(
       <OverviewDetail
         state={{
           ...state,
-          conflicts: [
-            {
-              port: 3000,
-              type: 'static',
-              claimants: ['shop/web', 'shop/web', 'blog/web']
-            }
-          ]
+          projects: {},
+          conflicts: [],
+          docker: { available: true, containers: [], missing: [] }
         }}
       />
     )
-
-    expect(screen.getAllByText('shop/web')).toHaveLength(1)
-    expect(screen.getByText('blog/web')).toBeInTheDocument()
+    expect(screen.getByText(/No projects discovered/)).toBeInTheDocument()
   })
 })
