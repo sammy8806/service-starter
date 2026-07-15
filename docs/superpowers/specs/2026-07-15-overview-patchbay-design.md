@@ -68,17 +68,20 @@ side, same spirit as the existing port filter input).
 
 ## Data derivation
 
-All from the existing `AppStateView` (`src/main/config/types.ts`), no new
-main-process state:
+Row and container rendering comes from the existing `AppStateView`
+(`src/main/config/types.ts`). Reassign validation and mutation is deliberately
+owned by a new main-process IPC operation rather than inferred from renderer
+state:
 
 - **Rows**: flatten every `(project, component, port)` into entries, then group
   by `port.port`. A port with one entry is idle/running per that component's
   `ComponentState.status`; a port with 2+ entries is contested.
-- **Holder vs blocked**: within a contested port, the claimant whose
-  `ComponentState.status === 'running'` is the holder; the rest are blocked.
-  `PortConflict.activeProcess` / `activePid` (keyed by port in `state.conflicts`)
-  provide the pid/process label for the holder when the holder is an external
-  (unmanaged) process.
+- **Holder vs blocked**: determine the holder from the active process bound to
+  this specific port, not merely from component-level `status`. Correlate the
+  port's active pid with the managed-process record when possible. A matching
+  managed component is the holder; otherwise render an external/unmanaged
+  holder using `PortConflict.activeProcess` / `activePid`. If ownership cannot
+  be established, say so rather than assigning the holder heuristically.
 - **Containers**: `state.docker.containers` (running/exited) and
   `state.docker.missing` (absent), each already carrying `usedBy`.
 - This replaces `buildPortRows` + `computeKpis`; the KPI tiles and the separate
@@ -115,7 +118,9 @@ env:
 
 - Syntax: `${port}` resolves to the component's **first declared port**.
   `${port.<label>}` resolves a specific port by its declaration label, for
-  multi-port components.
+  multi-port components. Port labels must be non-empty and unique within a
+  component because Reassign and labelled templates use the label as the stable
+  declaration identity.
 - Resolution happens **at spawn**, on both `startCommand` and `env` values,
   against the component's *resolved* ports (which already have overrides applied
   by `mergeConfig`). This closes the loop: override → `mergeConfig` → resolved
@@ -123,6 +128,9 @@ env:
 - Extend `resolveEnvVars` (or a sibling) to take a context map so `${port}` /
   `${port.<label>}` bindings resolve alongside `${ENV_VAR}`. Apply the same
   substitution to `startCommand` before splitting it in the process manager.
+- Port placeholders fail closed: an unknown/duplicate label or unresolved port
+  placeholder prevents the component from starting and produces an actionable
+  error. A literal unresolved placeholder must never reach the child process.
 - **Latent gap noted, not owned here:** the spawn path currently doesn't run
   `resolveEnvVars` on env at all, so `${ENV_VAR}` in env values reaches the
   child literally. Folding port context into the spawn-time resolver is a natural
@@ -134,23 +142,47 @@ env:
 Chosen behaviour: **small inline picker**, expanding the contested/held row.
 
 1. Click `Reassign` → the row expands: "Which one moves off :5173?" with a
-   radio list of the port's claimants (the currently-declared owner is
-   selectable but not forced), a port input prefilled with the **next free
-   port**, and Apply / Cancel.
-2. "Next free port" = lowest port ≥ the current one not present in the set of
-   all declared/observed ports.
-3. Apply writes a central-config override, **not** the project manifest:
-   `overrides[project].components[component].ports = [{ port: newPort, label }]`,
-   via the existing `getConfig` → mutate → `saveConfig` IPC path. `mergeConfig`
-   re-resolves and the row heals on the next state push.
-4. **Honesty guard:** before/after Apply, check whether the moved component's
-   `startCommand` or `env` actually references `${port}`/`${port.<label>}`. If it
-   does not, the picker shows a warning that the override won't move the real
-   bound port until the command is templated (links to the templating docs).
-   This prevents the false green when part 2's templating isn't wired for that
-   component.
-5. The picker notes "saved as an override, manifest untouched" so the user knows
-   where the change lives.
+   radio list of the port's declared claimants, a port input prefilled with the
+   **next available candidate**, and Apply / Cancel. An external process holding
+   the port is shown as the holder but is not selectable: Reassign moves one of
+   service-starter's declarations, not an arbitrary external process.
+2. "Next available candidate" is the lowest valid port greater than the current
+   port that is absent from the renderer's declared/observed set. This is only a
+   suggestion: the main process rescans and validates the destination on Apply
+   because the renderer's observation may be incomplete or stale.
+3. Apply calls a dedicated main-process operation:
+   `reassignPort(projectName, componentName, portLabel, fromPort, newPort)`.
+   Main verifies that the project, component, and uniquely labelled declaration
+   still resolve to `fromPort`; that `newPort` is a valid integer in 1–65535,
+   differs from `fromPort`, is not duplicated elsewhere in that component, and
+   is not currently declared or bound; and that the selected declaration is
+   actually wired into `startCommand` or `env` via `${port}` (when it is the
+   first declaration) or `${port.<label>}`.
+4. Main builds the component's **complete resolved port list**, changes only the
+   selected declaration, and writes that complete list to
+   `overrides[project].components[component].ports`. This preserves every sibling
+   port despite `mergeConfig` replacing the entire ports array. The project
+   manifest remains untouched.
+5. A claimant currently identified as holding the port cannot be reassigned in
+   this iteration. A managed holder is disabled with "Stop before reassigning";
+   an external/unmanaged holder is not selectable and explains that it must be
+   stopped outside the app. This avoids changing the declaration while the old
+   process remains bound. A different, non-running blocked claimant remains
+   selectable.
+6. Templating validation is a hard guard, not a renderer-only warning. If the
+   selected declaration is not referenced, main rejects the operation without
+   writing config. The picker displays the returned actionable error and links
+   to the templating docs. This validation requires access to resolved manifest
+   data and therefore cannot be implemented from `AppStateView` or `getConfig`.
+7. On success, main saves the central config, updates the project registry, and
+   triggers/publishes fresh state. The picker closes only after success and notes
+   "saved as an override, manifest untouched". Validation or persistence failure
+   leaves the picker open and the previous configuration intact.
+
+The operation returns a typed result suitable for inline errors, for example
+`{ ok: true }` or `{ ok: false, code, message, suggestedPort? }`. Expected error
+codes include stale declaration, invalid/occupied destination, missing or
+ambiguous template, active holder, and persistence failure.
 
 `Create` on an absent container is out of scope unless a create path already
 exists; if not, that row shows no action button.
@@ -161,10 +193,11 @@ Break `OverviewDetail` into focused pieces (each testable in isolation):
 
 - `OverviewDetail.tsx` — data derivation + section assembly + the empty state.
 - `buildPatchbayRows(state)` (util, unit-tested) — produces the grouped,
-  sorted row model including holder/blocked resolution and next-free-port
+  sorted row model including holder/blocked resolution and next-candidate
   helper. Replaces `buildPortRows` and absorbs what `computeKpis` summarised.
 - `PortRow.tsx` — renders one port row across all four states; owns the
-  reassign picker expansion and its local state.
+  reassign picker expansion and its local state; delegates all authoritative
+  validation and mutation to `reassignPort`.
 - `ContainerRow.tsx` — renders one container row (may reuse/rename the existing
   `DockerContainersSection` internals rather than duplicate them).
 - `PatchbayHeader.tsx` — title, one-line summary, All/Contested/Running filter.
@@ -175,19 +208,26 @@ by Overview are left in place only if other views consume them; otherwise remove
 ## Testing
 
 - `buildPatchbayRows`: idle/running/contested/held-blocked classification;
-  grouping and sort order; multi-port components; next-free-port selection.
-- `PortRow`: renders each state; opens the picker; Apply calls the config-write
-  callback with the right override shape; Cancel closes without writing.
+  grouping and sort order; per-port holder correlation; unknown/external holder;
+  multi-port components; next-candidate selection.
+- `PortRow`: renders each state; opens the picker; Apply calls the Reassign
+  operation with the selected declaration identity; an active holder is
+  disabled; external-holder explanation; inline success/error behavior; Cancel
+  closes without writing.
 - Update/replace `OverviewDetail.test.tsx` for the new structure and empty state.
 - Update the screenshot fixtures (`src/renderer/src/screenshots/fixtures.ts`) so
   the preview covers a held-and-blocked port.
 - **Port templating**: `${port}` and `${port.<label>}` substitution in
   `startCommand` and env values; first-port default; unknown label; a command
   with no placeholder passes through unchanged; multi-port component resolves
-  each label correctly. An integration-level check that a reassigned override
-  flows through `mergeConfig` into the resolved command string.
-- **Honesty guard**: picker warns when the moved component's command/env has no
-  `${port}` reference; stays silent when it does.
+  each label correctly; duplicate/empty labels are rejected; unresolved port
+  placeholders prevent spawn. An integration-level check that a reassigned
+  override flows through `mergeConfig` into the resolved command string.
+- **Reassign operation**: preserves sibling ports; rejects stale `fromPort`,
+  invalid/same/declared/bound destinations, missing or ambiguous templates, and
+  active holders; distinguishes external processes; handles a port
+  becoming occupied between suggestion and Apply; does not mutate config on any
+  failure; reports persistence failure; refreshes state after success.
 
 ## Out of scope
 

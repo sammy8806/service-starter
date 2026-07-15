@@ -53,9 +53,9 @@ components:
         label: Debug
     dependencies:
       - type: docker
-        container: billing-postgres
+        composeService: postgres
       - type: docker
-        container: redis
+        composeService: redis
       - type: api
         name: stripe
         check: curl -sf https://api.stripe.com/v1 -o /dev/null
@@ -128,11 +128,21 @@ dependencies:
 | `components.*.dependencies` | no | Component-level dependencies |
 | `dependencies` | no | Project-level dependencies |
 
+Docker dependencies can reference a service from the project's default Compose file. Service Starter resolves its `container_name` and `image`, so those values stay owned by Compose:
+
+```yaml
+dependencies:
+  - type: docker
+    composeService: postgres
+```
+
+The default file lookup order is `compose.yaml`, `compose.yml`, `docker-compose.yml`, then `docker-compose.yaml`. For another file, add `composeFile: compose.dev.yml`. Use `container` (and optionally `image`) instead for standalone or externally managed containers.
+
 ### Dependency types
 
 | Type | Required fields | How it checks |
 |------|----------------|---------------|
-| `docker` | `container` | Checks if named container is running via Docker API |
+| `docker` | `composeService` or `container` | Resolves Compose metadata when requested, then checks the container via Docker API |
 | `service` | `name`, `check` | Runs shell command; exit 0 = healthy |
 | `api` | `name`, `check` | Runs shell command + verifies `envRequired` vars are set |
 | `project` | `name` | Checks if referenced project has active ports |

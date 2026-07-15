@@ -61,6 +61,8 @@ Before writing the manifest, inspect the target repository for:
 - Include only ports that are actually expected in local development.
 - Put `dependencies` at project level only when they apply to the whole repo.
 - Put `dependencies` at component level when they are specific to one component.
+- For containers defined in Compose, use `composeService` so Compose remains the source of truth for the container name and image. Add `composeFile` only for a non-default Compose filename.
+- Use `container` and optional `image` only for standalone or externally managed containers.
 - Use `${VAR}` only for env vars that should come from the shell environment.
 - Do not invent commands, ports, containers, dependencies, or env vars.
 - If evidence is weak or ambiguous, omit the field and note the gap.
@@ -86,7 +88,7 @@ components:
       SECRET_KEY: ${SECRET_KEY}
     dependencies:
       - type: docker
-        container: postgres
+        composeService: postgres
 dependencies:
   - type: project
     name: shared-api

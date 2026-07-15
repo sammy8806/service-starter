@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   collectDockerDependencies,
+  collectProjectDependencies,
   canStartDocker,
   canStopDocker,
   dependencyStatusLabel,
@@ -8,7 +9,10 @@ import {
 } from './dependencyDisplay'
 import type { DependencyStateView } from '../context/AppContext'
 
-const dockerDep = (container: string, state: NonNullable<DependencyStateView['docker']>['state']): DependencyStateView => ({
+const dockerDep = (
+  container: string,
+  state: NonNullable<DependencyStateView['docker']>['state']
+): DependencyStateView => ({
   dependency: { type: 'docker', container },
   health: state === 'running' ? 'healthy' : state === 'unavailable' ? 'unknown' : 'unhealthy',
   lastChecked: Date.now(),
@@ -49,5 +53,19 @@ describe('dependencyDisplay', () => {
 
     expect(rows).toHaveLength(2)
     expect(rows.map((row) => row.container)).toEqual(['postgres', 'redis'])
+  })
+
+  it('includes component dependencies in the project-level summary without duplicates', () => {
+    const postgres = dockerDep('postgres', 'running')
+    const redis = dockerDep('redis', 'stopped')
+
+    expect(
+      collectProjectDependencies({
+        dependencies: [postgres],
+        components: {
+          api: { dependencies: [postgres, redis] }
+        }
+      })
+    ).toEqual([postgres, redis])
   })
 })

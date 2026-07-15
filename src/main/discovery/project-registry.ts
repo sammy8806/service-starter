@@ -37,10 +37,9 @@ export class ProjectRegistry extends EventEmitter {
     // Start file watcher
     this.fileWatcher = new FileWatcher(this.centralConfig.scanDirectories)
 
-    this.fileWatcher.on('manifest-added', (dir: string) => this.handleManifestChange(dir, 'add'))
-    this.fileWatcher.on('manifest-changed', (dir: string) =>
-      this.handleManifestChange(dir, 'change')
-    )
+    this.fileWatcher.on('manifest-added', (dir: string) => this.handleManifestChange(dir))
+    this.fileWatcher.on('manifest-changed', (dir: string) => this.handleManifestChange(dir))
+    this.fileWatcher.on('project-config-changed', (dir: string) => this.handleManifestChange(dir))
     this.fileWatcher.on('manifest-removed', (dir: string) => this.handleManifestRemove(dir))
 
     this.fileWatcher.start()
@@ -67,7 +66,7 @@ export class ProjectRegistry extends EventEmitter {
   updateConfig(config: CentralConfig): void {
     this.centralConfig = config
     // Re-resolve all projects with new config
-    for (const [dir, _project] of this.projects) {
+    for (const dir of this.projects.keys()) {
       const { manifest } = parseManifest(dir)
       if (manifest) {
         const resolved = mergeConfig(manifest, dir, this.centralConfig)
@@ -108,7 +107,7 @@ export class ProjectRegistry extends EventEmitter {
     }
   }
 
-  private handleManifestChange(directory: string, _action: 'add' | 'change'): void {
+  private handleManifestChange(directory: string): void {
     const { manifest } = parseManifest(directory)
     if (manifest) {
       const resolved = mergeConfig(manifest, directory, this.centralConfig)

@@ -78,7 +78,7 @@ export function DockerContainersSection({ docker }: DockerContainersSectionProps
           <table className="w-full text-[13px]">
             <tbody className="divide-y divide-white/[0.04]">
               {docker.missing.map((missing) => (
-                <tr key={missing.ref}>
+                <tr key={`${missing.ref}:${missing.usedBy.join('|')}`}>
                   <td className="px-4 py-2.5 font-medium text-zinc-300">{missing.ref}</td>
                   <td className="px-4 py-2.5 font-mono text-[11px] text-zinc-500">{missing.image ?? '—'}</td>
                   <td className="px-4 py-2.5 text-[11px] text-zinc-500">{formatUsedBy(missing.usedBy)}</td>

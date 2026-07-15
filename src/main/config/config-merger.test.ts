@@ -9,6 +9,7 @@ function makeCentralConfig(overrides?: CentralConfig['overrides']): CentralConfi
     portScanIntervalMs: 3000,
     editor: 'code',
     terminal: 'default',
+    gitGui: 'default',
     overrides
   }
 }

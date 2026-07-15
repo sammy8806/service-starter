@@ -80,6 +80,121 @@ dependencies:
       expect(manifest!.dependencies![0]).toEqual({ type: 'project', name: 'shared-lib' })
     })
 
+    it('resolves Docker metadata from a default Compose file', () => {
+      writeFileSync(
+        join(tempDir, 'docker-compose.yml'),
+        `
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: shop-postgres
+`,
+        'utf-8'
+      )
+      writeManifest(`
+name: shop
+components:
+  api:
+    ports: []
+    dependencies:
+      - type: docker
+        composeService: postgres
+`)
+
+      const { manifest, errors } = parseManifest(tempDir)
+
+      expect(errors).toEqual([])
+      expect(manifest!.components['api'].dependencies![0]).toEqual({
+        type: 'docker',
+        container: 'shop-postgres',
+        image: 'postgres:17-alpine',
+        composeService: 'postgres',
+        composeFile: 'docker-compose.yml',
+        composeProjectDir: tempDir
+      })
+    })
+
+    it('uses the Compose service name when container_name is not set', () => {
+      writeFileSync(
+        join(tempDir, 'compose.yaml'),
+        `
+services:
+  redis:
+    image: redis:7-alpine
+`,
+        'utf-8'
+      )
+      writeManifest(`
+name: shop
+components:
+  api:
+    ports: []
+    dependencies:
+      - type: docker
+        composeService: redis
+`)
+
+      const { manifest } = parseManifest(tempDir)
+
+      expect(manifest!.components['api'].dependencies![0]).toMatchObject({
+        container: 'redis',
+        image: 'redis:7-alpine',
+        composeService: 'redis'
+      })
+    })
+
+    it('supports an explicit Compose file', () => {
+      writeFileSync(
+        join(tempDir, 'compose.dev.yml'),
+        `
+services:
+  database:
+    image: postgres:16
+`,
+        'utf-8'
+      )
+      writeManifest(`
+name: shop
+components:
+  api:
+    ports: []
+    dependencies:
+      - type: docker
+        composeService: database
+        composeFile: compose.dev.yml
+`)
+
+      const { manifest, errors } = parseManifest(tempDir)
+
+      expect(errors).toEqual([])
+      expect(manifest!.components['api'].dependencies![0]).toMatchObject({
+        container: 'database',
+        image: 'postgres:16',
+        composeService: 'database',
+        composeFile: 'compose.dev.yml'
+      })
+    })
+
+    it('reports a missing Compose service', () => {
+      writeFileSync(join(tempDir, 'compose.yml'), 'services: {}\n', 'utf-8')
+      writeManifest(`
+name: shop
+components:
+  api:
+    ports: []
+    dependencies:
+      - type: docker
+        composeService: postgres
+`)
+
+      const { manifest, errors } = parseManifest(tempDir)
+
+      expect(errors).toContain(
+        'Docker dependency: Compose service "postgres" not found in compose.yml'
+      )
+      expect(manifest!.components['api'].dependencies).toBeUndefined()
+    })
+
     it('handles minimal manifest with just name and components', () => {
       writeManifest(`
 name: minimal

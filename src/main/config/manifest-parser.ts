@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'fs'
 import { join, basename } from 'path'
 import * as yaml from 'js-yaml'
 import { ProjectManifest, ComponentConfig, Dependency, PortDeclaration } from './types'
+import { resolveComposeService } from './compose-resolver'
 
 const MANIFEST_FILENAME = '.service-starter.yml'
 
@@ -56,7 +57,7 @@ export function parseManifest(projectDir: string): ParseResult {
   const components: Record<string, ComponentConfig> = {}
   if (data.components && typeof data.components === 'object') {
     for (const [key, value] of Object.entries(data.components as Record<string, unknown>)) {
-      const comp = parseComponent(key, value, errors)
+      const comp = parseComponent(key, value, errors, projectDir)
       if (comp) {
         components[key] = comp
       }
@@ -66,10 +67,14 @@ export function parseManifest(projectDir: string): ParseResult {
   }
 
   // Validate top-level dependencies
-  const dependencies = parseDependencies(data.dependencies, errors)
+  const dependencies = parseDependencies(data.dependencies, errors, projectDir)
 
   return {
-    manifest: { name, components, dependencies: dependencies.length > 0 ? dependencies : undefined },
+    manifest: {
+      name,
+      components,
+      dependencies: dependencies.length > 0 ? dependencies : undefined
+    },
     errors
   }
 }
@@ -77,7 +82,8 @@ export function parseManifest(projectDir: string): ParseResult {
 function parseComponent(
   name: string,
   raw: unknown,
-  errors: string[]
+  errors: string[],
+  projectDir: string
 ): ComponentConfig | null {
   if (!raw || typeof raw !== 'object') {
     errors.push(`Component "${name}" is not an object`)
@@ -110,7 +116,7 @@ function parseComponent(
         )
       : undefined
 
-  const dependencies = parseDependencies(data.dependencies, errors)
+  const dependencies = parseDependencies(data.dependencies, errors, projectDir)
 
   return {
     workDir: typeof data.workDir === 'string' ? data.workDir : undefined,
@@ -123,7 +129,7 @@ function parseComponent(
   }
 }
 
-function parseDependencies(raw: unknown, errors: string[]): Dependency[] {
+function parseDependencies(raw: unknown, errors: string[], projectDir: string): Dependency[] {
   if (!Array.isArray(raw)) return []
 
   const deps: Dependency[] = []
@@ -138,14 +144,34 @@ function parseDependencies(raw: unknown, errors: string[]): Dependency[] {
 
     switch (type) {
       case 'docker':
-        if (typeof d.container === 'string') {
+        if (typeof d.composeService === 'string') {
+          const resolved = resolveComposeService(
+            projectDir,
+            d.composeService,
+            typeof d.composeFile === 'string' ? d.composeFile : undefined
+          )
+
+          if (!resolved.service) {
+            errors.push(`Docker dependency: ${resolved.error}`)
+            break
+          }
+
+          deps.push({
+            type: 'docker',
+            container: typeof d.container === 'string' ? d.container : resolved.service.container,
+            image: typeof d.image === 'string' ? d.image : resolved.service.image,
+            composeService: d.composeService,
+            composeFile: resolved.service.composeFile,
+            composeProjectDir: projectDir
+          })
+        } else if (typeof d.container === 'string') {
           deps.push({
             type: 'docker',
             container: d.container,
             image: typeof d.image === 'string' ? d.image : undefined
           })
         } else {
-          errors.push('Docker dependency missing "container" field')
+          errors.push('Docker dependency missing "container" or "composeService" field')
         }
         break
 
@@ -163,9 +189,7 @@ function parseDependencies(raw: unknown, errors: string[]): Dependency[] {
             type: 'api',
             name: d.name,
             check: d.check,
-            envRequired: Array.isArray(d.envRequired)
-              ? d.envRequired.map(String)
-              : undefined
+            envRequired: Array.isArray(d.envRequired) ? d.envRequired.map(String) : undefined
           })
         } else {
           errors.push('API dependency missing "name" or "check" field')

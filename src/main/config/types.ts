@@ -6,6 +6,9 @@ export interface DockerDependency {
   type: 'docker'
   container: string
   image?: string
+  composeService?: string
+  composeFile?: string
+  composeProjectDir?: string
 }
 
 export interface ServiceDependency {

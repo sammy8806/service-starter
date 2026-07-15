@@ -42,6 +42,68 @@ describe('docker-matching', () => {
     expect(match?.Id).toBe('abc123')
   })
 
+  it('matches a Compose service within its project directory', () => {
+    const containers = [
+      {
+        Id: 'other',
+        Names: ['/other-postgres-1'],
+        Image: 'postgres:17',
+        State: 'running',
+        Status: 'Up 2 hours',
+        Labels: {
+          'com.docker.compose.service': 'postgres',
+          'com.docker.compose.project.working_dir': '/work/other'
+        }
+      },
+      {
+        Id: 'shop',
+        Names: ['/shop-postgres-1'],
+        Image: 'postgres:17',
+        State: 'running',
+        Status: 'Up 1 hour',
+        Labels: {
+          'com.docker.compose.service': 'postgres',
+          'com.docker.compose.project.working_dir': '/work/shop'
+        }
+      }
+    ]
+
+    const match = findDockerContainer(containers, {
+      type: 'docker',
+      container: 'postgres',
+      composeService: 'postgres',
+      composeProjectDir: '/work/shop'
+    })
+
+    expect(match?.Id).toBe('shop')
+  })
+
+  it('does not match the same Compose service from another project', () => {
+    const containers = [
+      {
+        Id: 'other',
+        Names: ['/other-postgres-1'],
+        Image: 'postgres:17',
+        State: 'running',
+        Status: 'Up 2 hours',
+        Labels: {
+          'com.docker.compose.service': 'postgres',
+          'com.docker.compose.project.working_dir': '/work/other'
+        }
+      }
+    ]
+
+    const match = findDockerContainer(containers, {
+      type: 'docker',
+      container: 'postgres',
+      image: 'postgres:17',
+      composeService: 'postgres',
+      composeProjectDir: '/work/shop'
+    })
+
+    expect(match).toBeUndefined()
+  })
+
   it('returns undefined when neither name nor image matches', () => {
     const containers = [
       {

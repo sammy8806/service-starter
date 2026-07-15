@@ -28,7 +28,7 @@ import { loadFavorites, saveFavorites, toggleFavorite as toggleFav, isFavorite }
 import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState } from './config/types'
 import { ProjectRegistry } from './discovery/project-registry'
 import { PortMonitor } from './monitoring/monitor'
-import { HealthAggregator } from './dependencies/health-aggregator'
+import { HealthAggregator, dependencyKey } from './dependencies/health-aggregator'
 import { TrayManager } from './tray/tray-manager'
 import { TrayWindow } from './tray/tray-window'
 import { registerIpcHandlers, pushStateToRenderers, pushLogDataToRenderers } from './ipc/handlers'
@@ -73,10 +73,7 @@ function buildAppState(): AppState {
       }))
 
       const depStates: DependencyState[] = (comp.dependencies ?? []).map((dep) => {
-        const depKey = dep.type === 'docker' ? `docker:${dep.container}` :
-                       dep.type === 'project' ? `project:${dep.name}` :
-                       `${dep.type}:${dep.name}`
-        return healthResults.get(depKey) ?? {
+        return healthResults.get(dependencyKey(dep)) ?? {
           dependency: dep,
           health: 'unknown' as const,
           lastChecked: 0
@@ -110,10 +107,7 @@ function buildAppState(): AppState {
 
     // Project-level dependencies
     const projectDepStates: DependencyState[] = project.dependencies.map((dep) => {
-      const depKey = dep.type === 'docker' ? `docker:${dep.container}` :
-                     dep.type === 'project' ? `project:${dep.name}` :
-                     `${dep.type}:${dep.name}`
-      return healthResults.get(depKey) ?? {
+      return healthResults.get(dependencyKey(dep)) ?? {
         dependency: dep,
         health: 'unknown' as const,
         lastChecked: 0

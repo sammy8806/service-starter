@@ -22,7 +22,12 @@ const project: ProjectStateView = {
 describe('ProjectDetail', () => {
   it('shows the running rollup and Start all / Stop all', () => {
     render(
-      <ProjectDetail project={project} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
+      <ProjectDetail
+        project={project}
+        onStartProject={vi.fn()}
+        onStopProject={vi.fn()}
+        onSelectComponent={vi.fn()}
+      />
     )
     expect(screen.getByText(/1\s*\/\s*2/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /start all/i })).toBeInTheDocument()
@@ -45,7 +50,12 @@ describe('ProjectDetail', () => {
 
   it('shows only running components in the quick-open list', () => {
     render(
-      <ProjectDetail project={project} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
+      <ProjectDetail
+        project={project}
+        onStartProject={vi.fn()}
+        onStopProject={vi.fn()}
+        onSelectComponent={vi.fn()}
+      />
     )
     expect(screen.getByText('Running — open logs')).toBeInTheDocument()
     expect(screen.getByText('backend')).toBeInTheDocument()
@@ -64,10 +74,47 @@ describe('ProjectDetail', () => {
       ]
     }
     render(
-      <ProjectDetail project={withDep} onStartProject={vi.fn()} onStopProject={vi.fn()} onSelectComponent={vi.fn()} />
+      <ProjectDetail
+        project={withDep}
+        onStartProject={vi.fn()}
+        onStopProject={vi.fn()}
+        onSelectComponent={vi.fn()}
+      />
     )
     expect(screen.getByText('Project Dependencies')).toBeInTheDocument()
     expect(screen.getByText('postgres')).toBeInTheDocument()
     expect(screen.getByText('Unhealthy')).toBeInTheDocument()
+  })
+
+  it('includes component dependencies in the project-level dependency section', () => {
+    const withComponentDependency: ProjectStateView = {
+      ...project,
+      components: {
+        ...project.components,
+        backend: {
+          ...project.components.backend,
+          dependencies: [
+            {
+              dependency: { type: 'docker', container: 'postgres' },
+              health: 'healthy',
+              lastChecked: 0,
+              docker: { state: 'running', statusText: 'Up 1 minute' }
+            }
+          ]
+        }
+      }
+    }
+    render(
+      <ProjectDetail
+        project={withComponentDependency}
+        onStartProject={vi.fn()}
+        onStopProject={vi.fn()}
+        onSelectComponent={vi.fn()}
+      />
+    )
+
+    expect(screen.getByText('Project Dependencies')).toBeInTheDocument()
+    expect(screen.getByText('postgres')).toBeInTheDocument()
+    expect(screen.getByText('Running')).toBeInTheDocument()
   })
 })

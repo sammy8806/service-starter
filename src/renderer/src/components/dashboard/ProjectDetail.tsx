@@ -5,6 +5,7 @@ import { Section } from './ui/Section'
 import { ActionButton } from './ui/ActionButton'
 import { EmptyState } from './ui/EmptyState'
 import { DependencyRow } from './DependencyRow'
+import { collectProjectDependencies } from '../../utils/dependencyDisplay'
 
 interface ProjectDetailProps {
   project: ProjectStateView
@@ -22,6 +23,7 @@ export function ProjectDetail({
   const components = Object.values(project.components)
   const running = components.filter((c) => c.status === 'running').length
   const runningComponents = components.filter((c) => c.status === 'running')
+  const dependencies = collectProjectDependencies(project)
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -44,10 +46,10 @@ export function ProjectDetail({
       />
 
       <div className="flex-1 space-y-6 overflow-y-auto p-5">
-        {project.dependencies.length > 0 && (
+        {dependencies.length > 0 && (
           <Section title="Project Dependencies">
             <div className="divide-y divide-white/[0.04] rounded-lg border border-white/[0.06]">
-              {project.dependencies.map((dep, i) => (
+              {dependencies.map((dep, i) => (
                 <DependencyRow key={`${dep.dependency.container ?? dep.dependency.name}-${i}`} dep={dep} />
               ))}
             </div>

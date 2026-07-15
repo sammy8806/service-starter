@@ -112,7 +112,7 @@ function collectAllDependencies(
   for (const project of projects.values()) {
     // Project-level dependencies
     for (const dep of project.dependencies) {
-      const key = depKey(project.name, dep)
+      const key = dependencyKey(dep)
       if (!seen.has(key)) {
         seen.add(key)
         deps.push({ key, dep })
@@ -120,10 +120,10 @@ function collectAllDependencies(
     }
 
     // Component-level dependencies
-    for (const [compName, comp] of Object.entries(project.components)) {
+    for (const comp of Object.values(project.components)) {
       if (comp.dependencies) {
         for (const dep of comp.dependencies) {
-          const key = depKey(`${project.name}/${compName}`, dep)
+          const key = dependencyKey(dep)
           if (!seen.has(key)) {
             seen.add(key)
             deps.push({ key, dep })
@@ -136,10 +136,12 @@ function collectAllDependencies(
   return deps
 }
 
-function depKey(_owner: string, dep: Dependency): string {
+export function dependencyKey(dep: Dependency): string {
   switch (dep.type) {
     case 'docker':
-      return `docker:${dep.container}`
+      return dep.composeService
+        ? `docker:compose:${dep.composeProjectDir ?? ''}:${dep.composeService}`
+        : `docker:${dep.container}`
     case 'service':
       return `service:${dep.name}`
     case 'api':

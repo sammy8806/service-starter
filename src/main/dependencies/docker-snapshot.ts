@@ -1,26 +1,42 @@
-import type { DockerDependency, ResolvedProject } from '../config/types'
-import { containerNameMatches, findDockerContainer, normalizeContainerName, type ListedContainer } from './docker-matching'
+import type { DockerDependency, DockerSnapshot, ResolvedProject } from '../config/types'
+import {
+  containerNameMatches,
+  findDockerContainer,
+  normalizeContainerName,
+  type ListedContainer
+} from './docker-matching'
 import { listDockerContainers, resetDockerClient } from './docker-checker'
 import { mapListedContainer, type DockerContainerView } from './docker-list'
 
 export interface DeclaredDockerRef {
   container: string
   image?: string
+  composeService?: string
+  composeFile?: string
+  composeProjectDir?: string
   usedBy: string[]
 }
 
-export function collectDeclaredDockerRefs(projects: Map<string, ResolvedProject>): DeclaredDockerRef[] {
+export function collectDeclaredDockerRefs(
+  projects: Map<string, ResolvedProject>
+): DeclaredDockerRef[] {
   const refs = new Map<string, DeclaredDockerRef>()
 
   const add = (dep: DockerDependency, label: string): void => {
-    const existing = refs.get(dep.container) ?? {
+    const key = dep.composeService
+      ? `compose:${dep.composeProjectDir ?? ''}:${dep.composeService}`
+      : `container:${dep.container}`
+    const existing = refs.get(key) ?? {
       container: dep.container,
       image: dep.image,
+      composeService: dep.composeService,
+      composeFile: dep.composeFile,
+      composeProjectDir: dep.composeProjectDir,
       usedBy: []
     }
     if (dep.image && !existing.image) existing.image = dep.image
     if (!existing.usedBy.includes(label)) existing.usedBy.push(label)
-    refs.set(dep.container, existing)
+    refs.set(key, existing)
   }
 
   for (const project of projects.values()) {
@@ -44,7 +60,14 @@ function buildUsedByMap(
   const usedBy = new Map<string, string[]>()
 
   for (const ref of declared) {
-    const dep: DockerDependency = { type: 'docker', container: ref.container, image: ref.image }
+    const dep: DockerDependency = {
+      type: 'docker',
+      container: ref.container,
+      image: ref.image,
+      composeService: ref.composeService,
+      composeFile: ref.composeFile,
+      composeProjectDir: ref.composeProjectDir
+    }
     const match = findDockerContainer(listed, dep)
     if (!match) continue
     const existing = usedBy.get(match.Id) ?? []
@@ -57,7 +80,9 @@ function buildUsedByMap(
   return usedBy
 }
 
-export async function buildDockerSnapshot(projects: Map<string, ResolvedProject>) {
+export async function buildDockerSnapshot(
+  projects: Map<string, ResolvedProject>
+): Promise<DockerSnapshot> {
   const declared = collectDeclaredDockerRefs(projects)
 
   try {
@@ -68,7 +93,17 @@ export async function buildDockerSnapshot(projects: Map<string, ResolvedProject>
       .sort((a, b) => a.name.localeCompare(b.name))
 
     const missing = declared
-      .filter((ref) => !findDockerContainer(listed, { type: 'docker', container: ref.container, image: ref.image }))
+      .filter(
+        (ref) =>
+          !findDockerContainer(listed, {
+            type: 'docker',
+            container: ref.container,
+            image: ref.image,
+            composeService: ref.composeService,
+            composeFile: ref.composeFile,
+            composeProjectDir: ref.composeProjectDir
+          })
+      )
       .map((ref) => ({
         ref: ref.container,
         image: ref.image,
@@ -103,10 +138,16 @@ export function containerIdsMatch(fullId: string, shortId: string): boolean {
   return fullId.startsWith(shortId)
 }
 
-export function findListedContainerById(listed: ListedContainer[], id: string): ListedContainer | undefined {
+export function findListedContainerById(
+  listed: ListedContainer[],
+  id: string
+): ListedContainer | undefined {
   return listed.find((container) => containerIdsMatch(container.Id, id) || container.Id === id)
 }
 
-export function findListedContainerByName(listed: ListedContainer[], name: string): ListedContainer | undefined {
+export function findListedContainerByName(
+  listed: ListedContainer[],
+  name: string
+): ListedContainer | undefined {
   return listed.find((container) => containerNameMatches(container.Names, name))
 }

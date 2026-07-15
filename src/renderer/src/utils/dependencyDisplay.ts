@@ -1,4 +1,37 @@
-import type { DependencyStateView } from '../../context/AppContext'
+import type { DependencyStateView } from '../context/AppContext'
+
+type ProjectDependenciesSource = {
+  dependencies: DependencyStateView[]
+  components: Record<string, { dependencies: DependencyStateView[] }>
+}
+
+function dependencyIdentity(dep: DependencyStateView): string {
+  const { type, container, image, name } = dep.dependency
+  return `${type}:${container ?? name ?? ''}:${image ?? ''}`
+}
+
+/**
+ * Project details summarize both project-wide and component-specific dependencies.
+ * Components retain their own dependency views; duplicates are shown only once here.
+ */
+export function collectProjectDependencies(
+  project: ProjectDependenciesSource
+): DependencyStateView[] {
+  const dependencies: DependencyStateView[] = []
+  const seen = new Set<string>()
+
+  const add = (dep: DependencyStateView): void => {
+    const key = dependencyIdentity(dep)
+    if (seen.has(key)) return
+    seen.add(key)
+    dependencies.push(dep)
+  }
+
+  project.dependencies.forEach(add)
+  Object.values(project.components).forEach((component) => component.dependencies.forEach(add))
+
+  return dependencies
+}
 
 export function canStartDocker(dep: DependencyStateView): boolean {
   return dep.dependency.type === 'docker' && dep.docker?.state === 'stopped'
@@ -101,7 +134,7 @@ export interface DockerOverviewRow {
 }
 
 export function collectDockerDependencies(state: {
-  projects: Record<string, { name: string; dependencies: DependencyStateView[]; components: Record<string, { dependencies: DependencyStateView[] }> }>
+  projects: Record<string, { name: string } & ProjectDependenciesSource>
 }): DockerOverviewRow[] {
   const rows: DockerOverviewRow[] = []
   const seen = new Set<string>()

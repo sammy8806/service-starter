@@ -1,4 +1,5 @@
 import type { DockerDependency } from '../config/types'
+import { resolve } from 'path'
 
 export interface ListedContainer {
   Id: string
@@ -6,6 +7,7 @@ export interface ListedContainer {
   Image: string
   State: string
   Status: string
+  Labels?: Record<string, string>
 }
 
 /** Normalize a Docker name list entry to a bare container name. */
@@ -51,6 +53,31 @@ export function findDockerContainer(
   containers: ListedContainer[],
   dep: DockerDependency
 ): ListedContainer | undefined {
+  if (dep.composeService) {
+    const composeMatches = containers.filter(
+      (container) => container.Labels?.['com.docker.compose.service'] === dep.composeService
+    )
+
+    if (dep.composeProjectDir) {
+      const projectDirectory = resolve(dep.composeProjectDir)
+      const byProjectDirectory = composeMatches.find((container) => {
+        const workingDir = container.Labels?.['com.docker.compose.project.working_dir']
+        return workingDir && resolve(workingDir) === projectDirectory
+      })
+      if (byProjectDirectory) return byProjectDirectory
+
+      if (
+        composeMatches.some(
+          (container) => container.Labels?.['com.docker.compose.project.working_dir']
+        )
+      ) {
+        return undefined
+      }
+    }
+
+    if (composeMatches.length === 1) return composeMatches[0]
+  }
+
   const byName = containers.find((c) => containerNameMatches(c.Names, dep.container))
   if (byName) return byName
 
