@@ -40,14 +40,27 @@ export interface PortDeclaration {
 
 // ── Component ───────────────────────────────────────────────────────
 
+/**
+ * Services are expected to stay running, while commands are allowed to
+ * finish. The omitted value keeps existing manifests backward compatible.
+ */
+export type ComponentType = 'service' | 'command'
+
 export interface ComponentConfig {
+  type?: ComponentType
   workDir?: string
   codeDir?: string
   editor?: string
+  /** Preferred for `type: command`; `startCommand` remains supported. */
+  command?: string
   startCommand?: string
   ports: PortDeclaration[]
   env?: Record<string, string>
   dependencies?: Dependency[]
+}
+
+export function getComponentCommand(component: ComponentConfig): string | undefined {
+  return component.command ?? component.startCommand
 }
 
 // ── Project manifest (.service-starter.yml) ─────────────────────────
@@ -134,10 +147,12 @@ export interface DependencyState {
 
 export interface ComponentState {
   name: string
+  type: ComponentType
   status: ComponentStatus
   processOrigin: ProcessOrigin
   ports: PortState[]
   dependencies: DependencyState[]
+  pid?: number
   editor?: string
   codeDir?: string
   workDir?: string

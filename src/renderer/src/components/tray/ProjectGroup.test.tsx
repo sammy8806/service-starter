@@ -45,6 +45,7 @@ const baseProps = {
   onToggleFavorite: vi.fn(),
   onStartComponent: vi.fn(),
   onStopComponent: vi.fn(),
+  onOpenLogs: vi.fn(),
   onShowProjectMenu: vi.fn(),
   onShowComponentMenu: vi.fn(),
   selectedId: null as string | null,

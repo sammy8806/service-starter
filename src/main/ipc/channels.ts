@@ -36,6 +36,7 @@ export const IPC_CHANNELS = {
   // Window management
   OPEN_DASHBOARD: 'window:open-dashboard',
   CLOSE_WINDOW: 'window:close',
+  CLOSE_COMMAND_LOG: 'window:close-command-log',
   RESIZE_WINDOW: 'window:resize',
 
   // Favorites

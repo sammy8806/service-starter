@@ -25,7 +25,7 @@ import { loadCentralConfig, saveCentralConfig } from './config/central-config'
 import { reassignPort } from './config/reassign-port'
 import { resolveEnvVars } from './config/env-resolver'
 import { loadFavorites, saveFavorites, toggleFavorite as toggleFav, isFavorite } from './config/favorites'
-import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState } from './config/types'
+import { CentralConfig, AppState, TrayIconState, ProjectState, ComponentState, DependencyState, PortState, getComponentCommand } from './config/types'
 import { ProjectRegistry } from './discovery/project-registry'
 import { PortMonitor } from './monitoring/monitor'
 import { HealthAggregator, dependencyKey } from './dependencies/health-aggregator'
@@ -36,6 +36,7 @@ import { openInTerminal, openInEditor, openInGitGui, killProcessOnPort, getProce
 import { registerContextMenuIpc } from './tray/context-menus'
 import { ProcessManager } from './process/process-manager'
 import { LogStreamer } from './process/log-streamer'
+import { CommandLogWindow } from './tray/command-log-window'
 import { startDockerContainer, stopDockerContainer, startDockerContainerById, stopDockerContainerById } from './dependencies/docker-control'
 import { deriveComponentRuntimeState } from '../shared/component-runtime'
 
@@ -49,6 +50,7 @@ let portMonitor: PortMonitor
 let healthAggregator: HealthAggregator
 let trayManager: TrayManager
 let trayWindow: TrayWindow
+let commandLogWindow: CommandLogWindow
 let dashboardWindow: BrowserWindow | null = null
 let processManager: ProcessManager
 let logStreamer: LogStreamer
@@ -93,10 +95,12 @@ function buildAppState(): AppState {
 
       components[compName] = {
         name: compName,
+        type: comp.type ?? 'service',
         status: runtimeState.status,
         processOrigin: runtimeState.processOrigin,
         ports: portStates,
         dependencies: depStates,
+        pid: managed?.pid ?? portStates.find((port) => typeof port.pid === 'number')?.pid,
         editor: comp.editor,
         codeDir: comp.codeDir ? join(dir, comp.codeDir) : undefined,
         workDir: comp.workDir ? join(dir, comp.workDir) : undefined,
@@ -221,6 +225,7 @@ app.whenReady().then(() => {
   healthAggregator = new HealthAggregator(10000)
   processManager = new ProcessManager()
   logStreamer = new LogStreamer()
+  commandLogWindow = new CommandLogWindow()
 
   // Create tray
   trayWindow = new TrayWindow()
@@ -244,26 +249,48 @@ app.whenReady().then(() => {
   // ── Helper: start a component by name ─────────────────────────────
   async function startComponentByName(
     projectName: string,
-    componentName: string
+    componentName: string,
+    options: { openCommandLog?: boolean } = {}
   ): Promise<{ pid: number; logFile: string }> {
     for (const [dir, project] of projectRegistry.getProjects()) {
       if (project.name === projectName) {
         const comp = project.components[componentName]
-        if (comp && comp.startCommand) {
-          return processManager.startComponent({
+        const command = comp ? getComponentCommand(comp) : undefined
+        if (comp && command) {
+          const result = await processManager.startComponent({
             projectName,
             componentName,
-            startCommand: comp.startCommand,
+            startCommand: command,
             workDir: comp.workDir ? join(dir, comp.workDir) : dir,
             projectDir: dir,
             declaredPorts: comp.ports.map((port) => port.port),
             ports: comp.ports,
             env: comp.env
           })
+
+          if (comp.type === 'command' && options.openCommandLog !== false) {
+            openComponentLogs(projectName, componentName)
+          }
+          return result
         }
       }
     }
-    throw new Error(`Component ${projectName}/${componentName} not found or has no startCommand`)
+    throw new Error(`Component ${projectName}/${componentName} not found or has no command`)
+  }
+
+  function openComponentLogs(projectName: string, componentName: string): void {
+    for (const project of projectRegistry.getProjects().values()) {
+      if (project.name !== projectName) continue
+
+      const component = project.components[componentName]
+      if (component?.type === 'command') {
+        trayWindow.hide()
+        void commandLogWindow.show(projectName, componentName, trayManager.getBounds())
+      } else {
+        createDashboardWindow()
+      }
+      return
+    }
   }
 
   // ── Helper: confirm and stop all managed services ─────────────────
@@ -322,6 +349,7 @@ app.whenReady().then(() => {
     openGitGui: (dir: string) => openInGitGui(dir, centralConfig.gitGui),
     killPort: killProcessOnPort,
     openDashboard: createDashboardWindow,
+    closeCommandLog: () => commandLogWindow.hide(),
     startComponent: (projectName: string, componentName: string) =>
       startComponentByName(projectName, componentName),
     stopComponent: (projectName: string, componentName: string) =>
@@ -330,12 +358,12 @@ app.whenReady().then(() => {
       for (const [dir, project] of projectRegistry.getProjects()) {
         if (project.name === projectName) {
           const starts = Object.entries(project.components)
-            .filter(([_, comp]) => comp.startCommand)
+            .filter(([_, comp]) => comp.type !== 'command' && getComponentCommand(comp))
             .map(([compName, comp]) =>
               processManager.startComponent({
                 projectName,
                 componentName: compName,
-                startCommand: comp.startCommand!,
+                startCommand: getComponentCommand(comp)!,
                 workDir: comp.workDir ? join(dir, comp.workDir) : dir,
                 projectDir: dir,
                 declaredPorts: comp.ports.map((port) => port.port),
@@ -402,8 +430,7 @@ app.whenReady().then(() => {
       })
     },
     tailLogs: (_projectName: string, _componentName: string) => {
-      // v1: open the dashboard. Deep-linking to the component's Logs tab is a follow-up.
-      createDashboardWindow()
+      openComponentLogs(_projectName, _componentName)
     },
     selectDirectory: async () => {
       const result = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] })
@@ -468,7 +495,9 @@ app.whenReady().then(() => {
           const alreadyRunning = [...managed.values()].some(
             (m) => m.projectName === p && m.componentName === compName
           )
-          if (comp.startCommand && !alreadyRunning) void startComponentByName(p, compName)
+          if (comp.type !== 'command' && getComponentCommand(comp) && !alreadyRunning) {
+            void startComponentByName(p, compName)
+          }
         }
       }
     },
@@ -489,7 +518,7 @@ app.whenReady().then(() => {
         })
       })
     },
-    tailLogs: () => createDashboardWindow(),
+    tailLogs: (projectName, componentName) => openComponentLogs(projectName, componentName),
     toggleFavorite: (p) => {
       favorites = toggleFav(favorites, p)
       saveFavorites(favoritesPath(), favorites)
@@ -525,6 +554,7 @@ app.whenReady().then(() => {
 
   processManager.on('process-started', pushState)
   processManager.on('process-stopped', pushState)
+  processManager.on('process-exited', pushState)
 
   logStreamer.on('log-data', ({ logFile, content }: { logFile: string; content: string }) => {
     pushLogDataToRenderers(logFile, content, logTailContexts.get(logFile))
@@ -546,6 +576,7 @@ app.on('before-quit', () => {
   portMonitor?.stop()
   healthAggregator?.stop()
   projectRegistry?.stop()
+  commandLogWindow?.destroy()
   trayWindow?.destroy()
   trayManager?.destroy()
 })

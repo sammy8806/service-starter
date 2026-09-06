@@ -7,6 +7,7 @@ interface LogsTabProps {
   processOrigin: ComponentStateView['processOrigin']
   directory: string
   hasServiceLog?: boolean
+  minimal?: boolean
 }
 
 interface LogDataPayload {
@@ -21,7 +22,8 @@ export function LogsTab({
   componentName,
   processOrigin,
   directory,
-  hasServiceLog = false
+  hasServiceLog = false,
+  minimal = false
 }: LogsTabProps): React.JSX.Element {
   const [content, setContent] = useState('')
   const [serviceLogChecked, setServiceLogChecked] = useState(false)
@@ -109,20 +111,22 @@ export function LogsTab({
 
   return (
     <div className="flex flex-1 flex-col bg-zinc-950 min-h-0">
-      <div className="flex items-center justify-end gap-3 px-4 py-1.5 border-b border-white/[0.06]">
-        <button
-          onClick={() => window.api.copyToClipboard(content)}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          Copy
-        </button>
-        <button
-          onClick={() => setContent('')}
-          className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
-        >
-          Clear
-        </button>
-      </div>
+      {!minimal && (
+        <div className="flex items-center justify-end gap-3 px-4 py-1.5 border-b border-white/[0.06]">
+          <button
+            onClick={() => window.api.copyToClipboard(content)}
+            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Copy
+          </button>
+          <button
+            onClick={() => setContent('')}
+            className="text-[11px] text-zinc-500 hover:text-zinc-300 transition-colors"
+          >
+            Clear
+          </button>
+        </div>
+      )}
       <pre
         ref={containerRef}
         onScroll={handleScroll}

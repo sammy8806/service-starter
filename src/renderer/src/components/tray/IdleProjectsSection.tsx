@@ -11,6 +11,7 @@ interface IdleProjectsSectionProps {
   onToggleFavorite: (projectName: string) => void
   onStartComponent: (projectName: string, componentName: string) => void
   onStopComponent: (projectName: string, componentName: string) => void
+  onOpenLogs: (projectName: string, componentName: string) => void
   onShowProjectMenu: (project: ProjectRow) => void
   onShowComponentMenu: (projectName: string, componentName: string) => void
 }
@@ -25,6 +26,7 @@ export function IdleProjectsSection({
   onToggleFavorite,
   onStartComponent,
   onStopComponent,
+  onOpenLogs,
   onShowProjectMenu,
   onShowComponentMenu
 }: IdleProjectsSectionProps): React.JSX.Element | null {
@@ -51,6 +53,7 @@ export function IdleProjectsSection({
           onToggleFavorite={onToggleFavorite}
           onStartComponent={onStartComponent}
           onStopComponent={onStopComponent}
+          onOpenLogs={onOpenLogs}
           onShowProjectMenu={() => onShowProjectMenu(row)}
           onShowComponentMenu={(componentName) => onShowComponentMenu(row.project.name, componentName)}
         />

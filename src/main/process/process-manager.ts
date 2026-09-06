@@ -135,6 +135,13 @@ export class ProcessManager extends EventEmitter {
     this.processes.set(k, managed)
     this.projectDirs.set(k, opts.projectDir)
 
+    // Short-lived commands should disappear from the managed-running state
+    // when they finish, while keeping their log file available for review or
+    // a later rerun. The PID check prevents an old process event from
+    // removing a newer run of the same component.
+    child.once?.('exit', () => this.handleProcessExit(k, managed.pid))
+    child.once?.('error', () => this.handleProcessExit(k, managed.pid))
+
     // Persist state
     this.writeStateFile(opts.projectDir)
 
@@ -261,6 +268,21 @@ export class ProcessManager extends EventEmitter {
     }
 
     writeFileSync(stateFile, JSON.stringify(state, null, 2))
+  }
+
+  private handleProcessExit(k: string, pid: number): void {
+    const managed = this.processes.get(k)
+    if (!managed || managed.pid !== pid) return
+
+    const projectDir = this.projectDirs.get(k)
+    this.processes.delete(k)
+    this.projectDirs.delete(k)
+
+    if (projectDir) {
+      this.writeStateFile(projectDir)
+    }
+
+    this.emit('process-exited', managed)
   }
 
   private async assertPortsAvailable(opts: StartComponentOptions): Promise<void> {

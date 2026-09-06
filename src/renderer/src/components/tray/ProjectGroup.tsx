@@ -17,6 +17,7 @@ interface ProjectGroupProps {
   onToggleFavorite: (projectName: string) => void
   onStartComponent: (projectName: string, componentName: string) => void
   onStopComponent: (projectName: string, componentName: string) => void
+  onOpenLogs: (projectName: string, componentName: string) => void
   onShowProjectMenu: () => void
   onShowComponentMenu: (componentName: string) => void
 }
@@ -35,6 +36,7 @@ export function ProjectGroup({
   onToggleFavorite,
   onStartComponent,
   onStopComponent,
+  onOpenLogs,
   onShowProjectMenu,
   onShowComponentMenu
 }: ProjectGroupProps): React.JSX.Element {
@@ -119,6 +121,7 @@ export function ProjectGroup({
                 now={now}
                 onStartComponent={onStartComponent}
                 onStopComponent={onStopComponent}
+                onOpenLogs={onOpenLogs}
                 onShowContextMenu={() => onShowComponentMenu(component.name)}
               />
             ))}

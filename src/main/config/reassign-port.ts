@@ -1,4 +1,4 @@
-import type { CentralConfig, ResolvedProject } from './types'
+import { getComponentCommand, type CentralConfig, type ResolvedProject } from './types'
 import { templateReferencesPortLabel } from './port-template'
 
 export type ReassignErrorCode =
@@ -98,7 +98,7 @@ export function reassignPort(
     )
   }
 
-  const templateTexts = [component.startCommand ?? '', ...Object.values(component.env ?? {})]
+  const templateTexts = [getComponentCommand(component) ?? '', ...Object.values(component.env ?? {})]
   if (!templateReferencesPortLabel(templateTexts, component.ports, portLabel)) {
     const placeholder =
       component.ports[0]?.label === portLabel ? '${port}' : `\${port.${portLabel}}`

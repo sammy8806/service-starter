@@ -31,10 +31,12 @@ export interface DependencyStateView {
 
 export interface ComponentStateView {
   name: string
+  type?: 'service' | 'command'
   status: 'running' | 'stopped' | 'warning'
   processOrigin: 'managed' | 'external' | 'none'
   ports: PortStateView[]
   dependencies: DependencyStateView[]
+  pid?: number
   editor?: string
   codeDir?: string
   workDir?: string
@@ -109,6 +111,7 @@ interface ContextMenuPayloadView {
   componentName?: string
   port?: number
   pid?: number
+  hasLog?: boolean
 }
 
 const DEFAULT_STATE: AppStateView = {

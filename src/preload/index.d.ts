@@ -14,6 +14,7 @@ export interface ContextMenuPayload {
   componentName?: string
   port?: number
   pid?: number
+  hasLog?: boolean
 }
 
 export interface LogDataPayload {
@@ -34,6 +35,7 @@ export interface ServiceStarterAPI {
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
   closeWindow: () => void
+  closeCommandLog: () => void
   resizeWindow: (height: number) => void
   startComponent: (projectName: string, componentName: string) => Promise<{ pid: number; logFile: string }>
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>

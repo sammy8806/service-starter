@@ -37,7 +37,7 @@ export function ComponentDetail({
   onRestart
 }: ComponentDetailProps): React.JSX.Element {
   const [tab, setTab] = useState<DetailTab>('logs')
-  const pid = component.ports.find((p) => typeof p.pid === 'number')?.pid
+  const pid = component.pid ?? component.ports.find((p) => typeof p.pid === 'number')?.pid
   const port = component.ports[0]?.port
   const isManaged = component.processOrigin === 'managed'
   const isRunning = component.status === 'running'

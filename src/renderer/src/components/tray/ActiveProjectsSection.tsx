@@ -9,6 +9,7 @@ interface ActiveProjectsSectionProps {
   onToggleFavorite: (projectName: string) => void
   onStartComponent: (projectName: string, componentName: string) => void
   onStopComponent: (projectName: string, componentName: string) => void
+  onOpenLogs: (projectName: string, componentName: string) => void
   onShowProjectMenu: (project: ProjectRow) => void
   onShowComponentMenu: (projectName: string, componentName: string) => void
   collapsedProjects: Set<string>
@@ -23,6 +24,7 @@ export function ActiveProjectsSection({
   onToggleFavorite,
   onStartComponent,
   onStopComponent,
+  onOpenLogs,
   onShowProjectMenu,
   onShowComponentMenu,
   collapsedProjects,
@@ -50,6 +52,7 @@ export function ActiveProjectsSection({
           onToggleFavorite={onToggleFavorite}
           onStartComponent={onStartComponent}
           onStopComponent={onStopComponent}
+          onOpenLogs={onOpenLogs}
           onShowProjectMenu={() => onShowProjectMenu(row)}
           onShowComponentMenu={(componentName) => onShowComponentMenu(row.project.name, componentName)}
         />

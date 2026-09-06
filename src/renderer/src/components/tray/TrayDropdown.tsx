@@ -105,7 +105,7 @@ export function TrayDropdown(): React.JSX.Element {
     const component = state.projects[projectName]?.components[componentName]
     if (!component) return
     const port = component.ports[0]?.port
-    const pid = component.ports.find((p) => typeof p.pid === 'number')?.pid
+    const pid = component.pid ?? component.ports.find((p) => typeof p.pid === 'number')?.pid
     const type =
       component.status === 'running'
         ? 'running-service'
@@ -117,7 +117,8 @@ export function TrayDropdown(): React.JSX.Element {
       projectDir: findProjectDir(projectName),
       componentName,
       port,
-      pid
+      pid,
+      hasLog: component.hasServiceLog
     })
   }
 
@@ -298,6 +299,7 @@ export function TrayDropdown(): React.JSX.Element {
               onToggleFavorite={ctx.toggleFavorite}
               onStartComponent={ctx.startComponent}
               onStopComponent={ctx.stopComponent}
+              onOpenLogs={ctx.tailLogs}
               onShowProjectMenu={(row) => showProjectMenu(row, true)}
               onShowComponentMenu={showComponentMenu}
             />
@@ -311,6 +313,7 @@ export function TrayDropdown(): React.JSX.Element {
               onToggleFavorite={ctx.toggleFavorite}
               onStartComponent={ctx.startComponent}
               onStopComponent={ctx.stopComponent}
+              onOpenLogs={ctx.tailLogs}
               onShowProjectMenu={(row) => showProjectMenu(row, false)}
               onShowComponentMenu={showComponentMenu}
             />

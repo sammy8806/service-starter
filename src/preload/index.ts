@@ -18,6 +18,7 @@ const api = {
   // Window management
   openDashboard: () => ipcRenderer.send('window:open-dashboard'),
   closeWindow: () => ipcRenderer.send('window:close'),
+  closeCommandLog: () => ipcRenderer.send('window:close-command-log'),
   resizeWindow: (height: number) => ipcRenderer.send('window:resize', height),
 
   // Process management

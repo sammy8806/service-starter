@@ -31,6 +31,7 @@ function installMockApi(): void {
     openGitGui: noop,
     killPort: noopBool,
     openDashboard: noop,
+    closeCommandLog: noop,
     toggleFavorite: noopArr,
     editManifest: noop,
     showContextMenu: noop,

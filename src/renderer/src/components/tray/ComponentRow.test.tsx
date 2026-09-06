@@ -20,6 +20,7 @@ const noopHandlers = {
   projectDir: '/work/bandai',
   onStartComponent: vi.fn(),
   onStopComponent: vi.fn(),
+  onOpenLogs: vi.fn(),
   onShowContextMenu: vi.fn(),
   selected: false,
   now: 1_000_000_000_000
@@ -46,6 +47,23 @@ describe('ComponentRow', () => {
     )
     expect(screen.getByText('2m')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Stop' })).toBeInTheDocument()
+  })
+
+  it('shows an Open logs action for a command with output', async () => {
+    const onOpenLogs = vi.fn()
+    render(
+      <ComponentRow
+        {...noopHandlers}
+        onOpenLogs={onOpenLogs}
+        component={comp({
+          type: 'command',
+          hasServiceLog: true
+        })}
+      />
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Open logs' }))
+    expect(onOpenLogs).toHaveBeenCalledWith('bandai', 'frontend')
   })
 
   it('raises the context menu on overflow click', async () => {

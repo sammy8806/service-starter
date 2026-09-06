@@ -12,6 +12,7 @@ interface HandlerDependencies {
   openGitGui: (dir: string) => void
   killPort: (port: number) => Promise<boolean>
   openDashboard: () => void
+  closeCommandLog: () => void
   startComponent: (projectName: string, componentName: string) => Promise<{ pid: number; logFile: string }>
   stopComponent: (projectName: string, componentName: string) => Promise<boolean>
   startProject: (projectName: string) => Promise<void>
@@ -90,6 +91,10 @@ export function registerIpcHandlers(deps: HandlerDependencies): void {
 
   ipcMain.on(IPC_CHANNELS.OPEN_DASHBOARD, () => {
     deps.openDashboard()
+  })
+
+  ipcMain.on(IPC_CHANNELS.CLOSE_COMMAND_LOG, () => {
+    deps.closeCommandLog()
   })
 
   // Process management

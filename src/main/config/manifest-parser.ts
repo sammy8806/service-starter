@@ -92,6 +92,11 @@ function parseComponent(
 
   const data = raw as Record<string, unknown>
 
+  const type = data.type === 'command' ? 'command' : 'service'
+  if (data.type !== undefined && data.type !== 'service' && data.type !== 'command') {
+    errors.push(`Component "${name}" has invalid type; expected "service" or "command"`)
+  }
+
   const ports: PortDeclaration[] = []
   if (Array.isArray(data.ports)) {
     for (const p of data.ports) {
@@ -119,9 +124,11 @@ function parseComponent(
   const dependencies = parseDependencies(data.dependencies, errors, projectDir)
 
   return {
+    type,
     workDir: typeof data.workDir === 'string' ? data.workDir : undefined,
     codeDir: typeof data.codeDir === 'string' ? data.codeDir : undefined,
     editor: typeof data.editor === 'string' ? data.editor : undefined,
+    command: typeof data.command === 'string' ? data.command : undefined,
     startCommand: typeof data.startCommand === 'string' ? data.startCommand : undefined,
     ports,
     env,

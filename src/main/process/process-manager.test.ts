@@ -23,6 +23,14 @@ describe('ProcessManager', () => {
     pm.stopAll()
   })
 
+  async function waitFor(check: () => boolean, timeoutMs = 3000): Promise<void> {
+    const deadline = Date.now() + timeoutMs
+    while (!check() && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, 25))
+    }
+    expect(check()).toBe(true)
+  }
+
   describe('startComponent', () => {
     it('should spawn a detached process and track it', async () => {
       const result = await pm.startComponent({
@@ -69,6 +77,23 @@ describe('ProcessManager', () => {
       const state = JSON.parse(readFileSync(stateFile, 'utf-8'))
       expect(state.processes.api).toBeDefined()
       expect(state.processes.api.pid).toBeGreaterThan(0)
+    })
+
+    it('should remove a completed command from managed state but retain its log', async () => {
+      const result = await pm.startComponent({
+        projectName: 'test-project',
+        componentName: 'migrate',
+        startCommand: "node -e process.stdout.write('migration-complete')",
+        workDir: tempDir,
+        projectDir: tempDir
+      })
+
+      expect(pm.getManagedProcess('test-project', 'migrate')).toBeDefined()
+      await waitFor(() => pm.getManagedProcess('test-project', 'migrate') === undefined)
+
+      expect(readFileSync(result.logFile, 'utf-8')).toContain('migration-complete')
+      const state = JSON.parse(readFileSync(join(tempDir, '.service-starter', 'state.json'), 'utf-8'))
+      expect(state.processes.migrate).toBeUndefined()
     })
 
     it('should allow start when declared ports collide but are not bound', async () => {

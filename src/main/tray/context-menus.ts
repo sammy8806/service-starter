@@ -15,6 +15,7 @@ export interface ContextMenuPayload {
   componentName?: string
   port?: number
   pid?: number
+  hasLog?: boolean
 }
 
 export interface ContextMenuDeps {
@@ -65,7 +66,8 @@ function buildTemplate(
         SEP,
         { label: 'Copy URL', enabled: !!url, click: () => d.copyToClipboard(url) },
         { label: 'Copy Port', enabled: !!p.port, click: () => d.copyToClipboard(String(p.port)) },
-        { label: 'Tail Logs', click: () => d.tailLogs(p.projectName, comp) },
+        { label: 'Copy PID', enabled: !!p.pid, click: () => d.copyToClipboard(String(p.pid)) },
+        { label: 'Open Logs', click: () => d.tailLogs(p.projectName, comp) },
         SEP,
         { label: pinLabel, click: () => d.toggleFavorite(p.projectName) },
         { label: 'Settings…', click: () => d.openSettings() }
@@ -78,6 +80,7 @@ function buildTemplate(
         { label: 'Open Editor', enabled: !!dir, click: () => d.openEditor(dir) },
         { label: 'Open Git GUI', enabled: !!dir, click: () => d.openGitGui(dir) },
         SEP,
+        { label: 'Open Logs', enabled: !!p.hasLog, click: () => d.tailLogs(p.projectName, comp) },
         { label: 'Copy Port', enabled: !!p.port, click: () => d.copyToClipboard(String(p.port)) },
         SEP,
         { label: pinLabel, click: () => d.toggleFavorite(p.projectName) },

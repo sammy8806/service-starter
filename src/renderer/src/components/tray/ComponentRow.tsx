@@ -12,6 +12,7 @@ interface ComponentRowProps {
   now?: number
   onStartComponent: (projectName: string, componentName: string) => void
   onStopComponent: (projectName: string, componentName: string) => void
+  onOpenLogs: (projectName: string, componentName: string) => void
   onShowContextMenu: () => void
   onHover?: () => void
 }
@@ -24,10 +25,13 @@ export function ComponentRow({
   now,
   onStartComponent,
   onStopComponent,
+  onOpenLogs,
   onShowContextMenu,
   onHover
 }: ComponentRowProps): React.JSX.Element {
   const mainPort = component.ports[0]
+  const isCommand = component.type === 'command'
+  const hasCommandLog = isCommand && (component.hasServiceLog || component.processOrigin === 'managed')
   const canStart = component.processOrigin === 'none' && !hasBoundPort(component.ports)
   const killablePort =
     component.processOrigin === 'external' ? findBoundPort(component.ports) : undefined
@@ -73,6 +77,13 @@ export function ComponentRow({
       )}
 
       <div className="flex items-center gap-0.5 flex-shrink-0">
+        {hasCommandLog && (
+          <RowAction
+            icon="logs"
+            title="Open logs"
+            onClick={() => onOpenLogs(projectName, component.name)}
+          />
+        )}
         {canStart ? (
           <RowAction icon="play" title="Start" onClick={() => onStartComponent(projectName, component.name)} />
         ) : component.processOrigin === 'managed' ? (
@@ -92,7 +103,7 @@ function RowAction({
   onClick,
   danger = false
 }: {
-  icon: 'kill' | 'play' | 'stop'
+  icon: 'kill' | 'play' | 'stop' | 'logs'
   title: string
   onClick: () => void
   danger?: boolean
@@ -111,6 +122,13 @@ function RowAction({
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M5.25 7.5A2.25 2.25 0 017.5 5.25h9a2.25 2.25 0 012.25 2.25v9a2.25 2.25 0 01-2.25 2.25h-9a2.25 2.25 0 01-2.25-2.25v-9z"
+      />
+    ),
+    logs: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5.25 5.25h13.5v13.5H5.25zM8.25 9h7.5M8.25 12h7.5M8.25 15h4.5"
       />
     )
   }

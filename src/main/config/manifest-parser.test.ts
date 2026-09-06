@@ -211,6 +211,27 @@ components:
       expect(manifest!.components['web'].ports).toEqual([{ port: 8080, label: 'Web' }])
     })
 
+    it('parses a short-lived command without ports', () => {
+      writeManifest(`
+name: billing
+components:
+  migrate:
+    type: command
+    command: npm run db:migrate
+    workDir: ./api
+`)
+
+      const { manifest, errors } = parseManifest(tempDir)
+
+      expect(errors).toEqual([])
+      expect(manifest!.components.migrate).toMatchObject({
+        type: 'command',
+        command: 'npm run db:migrate',
+        workDir: './api',
+        ports: []
+      })
+    })
+
     it('uses directory name as fallback when name is missing', () => {
       writeManifest(`
 components:
