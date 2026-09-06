@@ -21,7 +21,8 @@ Workflow reference for creating or updating a `.service-starter.yml` in a target
 3. **Fill fields minimally** (omission beats guessing):
    - `workDir` only if the component doesn't run from repo root
    - `codeDir` only if it's a meaningfully better "Open in Editor" target than workDir
-   - `startCommand` only when an established local-dev command exists in scripts/docs
+   - `startCommand` only when an established long-running local-dev command exists in scripts/docs
+   - Use `type: command` plus `command` for established short-lived tasks such as migrations or generators
    - `ports` only those actually expected in local dev; include configured debug ports
    - `env` with `${VAR}` only for values that must come from the shell environment
 4. **Add dependencies.** Component-level when specific to one component; project-level when they apply to the whole repo (e.g. `docker info`). For Compose-defined containers use `composeService` (Compose stays source of truth for name/image); `container` only for standalone/externally managed ones. `type: project` references another repo's manifest `name` — check that manifest exists.
@@ -41,6 +42,7 @@ Workflow reference for creating or updating a `.service-starter.yml` in a target
 name: project-name            # optional; falls back to directory name
 components:                   # required; one per independently runnable app
   api:
+    type: service                # optional; use command for short-lived tasks
     workDir: ./packages/api      # optional, default ./
     codeDir: ./packages/api/src  # optional editor target, default workDir
     editor: code                 # optional per-component editor key
@@ -48,6 +50,10 @@ components:                   # required; one per independently runnable app
     ports:                       # {port, label}; label defaults to "Port N"
       - port: 3000
         label: API
+  migrate:
+    type: command
+    command: npm run db:migrate
+    workDir: ./packages/api
     env:                         # ${VAR} resolved from shell env
       DATABASE_URL: ${DATABASE_URL}
     dependencies:

@@ -26,6 +26,7 @@ service-starter picks it up automatically — no config, no restart.
 - Monitors port usage — shows what's running, what's idle, flags conflicts between projects
 - Checks dependency health: Docker containers, shell services, external APIs
 - Quick actions from the tray: open in editor, open terminal, open in browser
+- Runs short-lived commands with captured logs, even when they have no port
 
 ## Getting started
 

@@ -114,6 +114,27 @@ dependencies:
     name: my-api-service
 ```
 
+## Short-lived command
+
+Commands use the same component lifecycle and captured logs as services, but
+they are expected to finish and do not need a port declaration:
+
+```yaml
+name: billing
+components:
+  migrate:
+    type: command
+    command: npm run db:migrate
+    workDir: ./api
+    env:
+      NODE_ENV: development
+```
+
+The command appears as running while it is executing, then returns to idle when
+it exits. Starting it from the tray opens a wide live log window; its output
+also remains available from the component's Logs action and can be run again.
+`startCommand` is also accepted for command components.
+
 ## Field reference
 
 | Field | Required | Description |
@@ -122,8 +143,10 @@ dependencies:
 | `components` | yes | Map of component name to config |
 | `components.*.workDir` | no | Working directory, relative to project root (default: `./`) |
 | `components.*.codeDir` | no | Source directory for "Open in Editor" (default: workDir) |
-| `components.*.startCommand` | no | Shell command pre-filled when opening terminal |
-| `components.*.ports` | yes | List of `{port, label}` objects |
+| `components.*.type` | no | `service` (default) or `command` for a short-lived process |
+| `components.*.command` | no | Command to run for a `command` component |
+| `components.*.startCommand` | no | Command to run for a service; also accepted for command components |
+| `components.*.ports` | no | List of `{port, label}` objects; normally omitted for commands |
 | `components.*.env` | no | Key-value pairs; `${VAR}` references resolved from shell env |
 | `components.*.dependencies` | no | Component-level dependencies |
 | `dependencies` | no | Project-level dependencies |
